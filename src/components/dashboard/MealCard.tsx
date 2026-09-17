@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DayOfWeek, MealType, Recipe } from '../../types';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSaladModal } from './SwapSaladModal';
-import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, BookOpen, Utensils } from 'lucide-react';
+import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, Utensils } from 'lucide-react';
 
 interface MealCardProps {
   day: DayOfWeek;
@@ -170,36 +170,6 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                   </div>
                 </div>
               )}
-
-              {/* Paso a paso de la ensalada */}
-              <div className="pt-2 border-t border-[#d4e6d4]/70 flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-[11px] text-[#2e5632] font-semibold flex items-center gap-1">
-                  <BookOpen className="w-3 h-3 text-[#3a633d]" />
-                  ¿Cómo prepararla?
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent('receta ensalada paso a paso ' + saladSide.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-stone-700 text-[11px] font-semibold transition-colors border border-[#c3dcc3]"
-                    title="Ver elaboración paso a paso y aliños en la web"
-                  >
-                    <ExternalLink className="w-3 h-3 text-stone-500" />
-                    <span>Pasos Web</span>
-                  </a>
-                  <a
-                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ensalada ' + saladSide.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
-                    title="Ver receta de ensalada en vídeo en YouTube"
-                  >
-                    <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
-                    <span>Vídeo</span>
-                  </a>
-                </div>
-              </div>
             </div>
           )}
 
