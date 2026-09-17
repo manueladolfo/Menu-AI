@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSnackModal } from './SwapSnackModal';
-import { Clock, RefreshCw, SmilePlus, ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react';
+import { Clock, RefreshCw, SmilePlus, ChevronDown, ChevronUp, ShoppingBag, ExternalLink, Play, BookOpen } from 'lucide-react';
 import type { DayOfWeek } from '../../types';
 import { DAYS_OF_WEEK } from '../../services/menuAlgorithm';
 
@@ -91,6 +91,36 @@ export const QuickSnacksSection: React.FC = () => {
                   </span>
                 ))}
               </div>
+
+              {/* Paso a paso del Snack destacado */}
+              <div className="mt-3 pt-2.5 border-t border-amber-200/60 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[11px] text-amber-900 font-semibold flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5 text-amber-700" />
+                  ¿Cómo prepararlo?
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent('receta snack ' + currentDailySnack.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-stone-100 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
+                    title="Ver elaboración e ideas en Google"
+                  >
+                    <ExternalLink className="w-3 h-3 text-stone-500" />
+                    <span>Pasos Web</span>
+                  </a>
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta snack ' + currentDailySnack.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
+                    title="Ver preparación en vídeo en YouTube"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                    <span>Vídeo</span>
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -115,11 +145,11 @@ export const QuickSnacksSection: React.FC = () => {
                 Planificación de snacks para toda la semana:
               </span>
               <span className="text-[11px] text-stone-400 font-normal">
-                Sincronizados en la lista de compra
+                Con ingredientes y paso a paso incluidos
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {DAYS_OF_WEEK.map((d) => {
                 const daySnack = weeklySnacks[d] || currentDailySnack;
                 const isSelectedDay = d === activeDay;
@@ -128,37 +158,83 @@ export const QuickSnacksSection: React.FC = () => {
                   <div
                     key={d}
                     onClick={() => setActiveDay(d)}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
                       isSelectedDay
-                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/50'
+                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300/50 shadow-2xs'
                         : 'bg-stone-50/70 border-stone-200/70 hover:bg-white hover:border-amber-200'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-2xl select-none">{daySnack.emoji}</span>
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-extrabold uppercase text-stone-400 block tracking-wider">
-                          {d}
-                        </span>
-                        <h5 className="font-bold text-xs text-stone-800 truncate">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span className="text-2xl select-none shrink-0 mt-0.5">{daySnack.emoji}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10px] font-extrabold uppercase text-stone-400 tracking-wider">
+                            {d}
+                          </span>
+                          <span className="text-[10px] text-stone-500 font-medium">
+                            {daySnack.prepTime} • ~{daySnack.calories} kcal
+                          </span>
+                        </div>
+                        <h5 className="font-bold text-xs text-stone-800 leading-snug mt-0.5">
                           {daySnack.name}
                         </h5>
-                        <span className="text-[10px] text-stone-500">
-                          {daySnack.prepTime} • {daySnack.calories} kcal
-                        </span>
+                        <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
+                          {daySnack.description}
+                        </p>
+
+                        {/* Ingredientes del snack de cada día */}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {daySnack.ingredients.map((ing, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] bg-white border border-stone-200/80 text-stone-600 px-1.5 py-0.5 rounded-md"
+                            >
+                              {ing.name} ({ing.quantity} {ing.unit})
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSwapForDay(d);
-                      }}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-amber-800 hover:bg-amber-100/60 transition-colors shrink-0"
-                      title={`Cambiar snack para el ${d}`}
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Paso a paso y botón cambiar */}
+                    <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent('receta snack ' + daySnack.name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white hover:bg-stone-100 text-stone-700 text-[10px] font-semibold border border-stone-200"
+                          title="Ver en Google"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5 text-stone-400" />
+                          <span>Pasos Web</span>
+                        </a>
+                        <a
+                          href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta snack ' + daySnack.name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[10px] font-semibold border border-red-200"
+                          title="Ver en YouTube"
+                        >
+                          <Play className="w-2 h-2 fill-red-600 text-red-600" />
+                          <span>Vídeo</span>
+                        </a>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenSwapForDay(d);
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-amber-900 bg-amber-100/80 hover:bg-amber-200 transition-colors shrink-0"
+                        title={`Cambiar snack para el ${d}`}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Cambiar</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}

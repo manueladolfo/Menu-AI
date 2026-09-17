@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DayOfWeek, MealType, Recipe } from '../../types';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSaladModal } from './SwapSaladModal';
-import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, ShoppingBag, Leaf, ExternalLink, Play } from 'lucide-react';
+import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, BookOpen, Utensils } from 'lucide-react';
 
 interface MealCardProps {
   day: DayOfWeek;
@@ -115,36 +115,91 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
             </span>
           </div>
 
-          {/* 🥗 Acompañamiento Fresco Diario Obligatorio con Selector/Buscador */}
+          {/* 🥗 Acompañamiento Fresco Diario Obligatorio con Ingredientes y Paso a Paso */}
           {saladSide && (
-            <div className="mt-3 p-3 rounded-2xl bg-[#f0f6f0] border border-[#d4e6d4] flex items-center justify-between gap-2.5">
-              <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                <span className="text-2xl select-none shrink-0">{saladSide.emoji}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] uppercase font-extrabold text-[#3a633d] tracking-wider">
-                      Ensalada del menú:
-                    </span>
-                    <Leaf className="w-3 h-3 text-[#3a633d]" />
+            <div className="mt-3 p-3 rounded-2xl bg-[#f0f6f0] border border-[#d4e6d4] space-y-2.5">
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                  <span className="text-2xl select-none shrink-0">{saladSide.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] uppercase font-extrabold text-[#3a633d] tracking-wider">
+                        Ensalada del menú:
+                      </span>
+                      <Leaf className="w-3 h-3 text-[#3a633d]" />
+                    </div>
+                    <p className="text-xs font-bold text-stone-900 leading-snug">
+                      {saladSide.name}
+                    </p>
+                    <p className="text-[11px] text-[#426b45] line-clamp-1 mt-0.5">
+                      {saladSide.description}
+                    </p>
                   </div>
-                  <p className="text-xs font-bold text-stone-900 leading-snug">
-                    {saladSide.name}
-                  </p>
-                  <p className="text-[11px] text-[#426b45] line-clamp-1 mt-0.5">
-                    {saladSide.description}
-                  </p>
                 </div>
+
+                {/* Botón interactivo para cambiar o buscar ensaladas */}
+                <button
+                  onClick={() => setIsSaladModalOpen(true)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-[#2e5632] bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-[#c3dcc3] shadow-2xs transition-all active:scale-95 shrink-0"
+                  title="Cambiar o buscar otra ensalada del catálogo para esta comida"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Cambiar</span>
+                </button>
               </div>
 
-              {/* Botón interactivo para cambiar o buscar ensaladas */}
-              <button
-                onClick={() => setIsSaladModalOpen(true)}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#2e5632] bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-[#c3dcc3] shadow-2xs transition-all active:scale-95 shrink-0"
-                title="Cambiar o buscar otra ensalada del catálogo para esta comida"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Cambiar</span>
-              </button>
+              {/* Ingredientes de la ensalada */}
+              {saladSide.ingredients && saladSide.ingredients.length > 0 && (
+                <div className="pt-2 border-t border-[#d4e6d4]/70">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-[#2e5632] mb-1">
+                    <span>Ingredientes ({activeMembersCount} pers.):</span>
+                    <span className="text-[10px] font-normal text-stone-400">Mercadona / Aldi</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {saladSide.ingredients.map((ing, idx) => {
+                      const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                      return (
+                        <span
+                          key={idx}
+                          className="text-[10px] bg-white/90 border border-[#c3dcc3] text-[#28492c] px-2 py-0.5 rounded-lg font-medium"
+                        >
+                          {ing.name} ({scaledQty} {ing.unit})
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Paso a paso de la ensalada */}
+              <div className="pt-2 border-t border-[#d4e6d4]/70 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[11px] text-[#2e5632] font-semibold flex items-center gap-1">
+                  <BookOpen className="w-3 h-3 text-[#3a633d]" />
+                  ¿Cómo prepararla?
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent('receta ensalada paso a paso ' + saladSide.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-stone-700 text-[11px] font-semibold transition-colors border border-[#c3dcc3]"
+                    title="Ver elaboración paso a paso y aliños en la web"
+                  >
+                    <ExternalLink className="w-3 h-3 text-stone-500" />
+                    <span>Pasos Web</span>
+                  </a>
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ensalada ' + saladSide.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
+                    title="Ver receta de ensalada en vídeo en YouTube"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                    <span>Vídeo</span>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
 
@@ -192,61 +247,117 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
               onClick={() => setShowIngredients(!showIngredients)}
               className="flex items-center gap-1 text-xs text-stone-500 hover:text-[#c26546] font-semibold transition-colors"
             >
-              <span>{showIngredients ? 'Ocultar' : 'Ingredientes'}</span>
+              <span>{showIngredients ? 'Ocultar' : 'Ingredientes y Pasos'}</span>
               {showIngredients ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
 
-          {/* Expandable ingredients list */}
+          {/* Expandable ingredients & step-by-step list (Plato Principal y Ensalada) */}
           {showIngredients && (
-            <div className="mt-3 pt-3 border-t border-dashed border-stone-200">
-              <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-                <span className="flex items-center gap-1">
-                  <ShoppingBag className="w-3.5 h-3.5 text-[#c26546]" />
-                  Ingredientes para {activeMembersCount} personas:
-                </span>
-                <span className="text-[10px] text-stone-400 font-normal">Mercadona / Aldi</span>
-              </div>
-              <ul className="space-y-1.5 text-xs text-stone-600">
-                {recipe.ingredients.map((ing, idx) => {
-                  const scaledQty = (ing.quantity || 1) * activeMembersCount;
-                  return (
-                    <li key={idx} className="flex items-baseline justify-between py-0.5 border-b border-stone-50">
-                      <span className="font-medium text-stone-700">{ing.name}</span>
-                      <span className="text-stone-500 text-[11px]">
-                        {scaledQty} {ing.unit} {ing.supermarket_ref ? `(${ing.supermarket_ref})` : ''}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+            <div className="mt-3 pt-3 border-t border-dashed border-stone-200 space-y-4">
+              {/* Sección 1: Plato Principal */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
+                  <span className="flex items-center gap-1">
+                    <Utensils className="w-3.5 h-3.5 text-[#c26546]" />
+                    Plato Principal: {recipe.title} ({activeMembersCount} personas):
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-normal">Mercadona / Aldi</span>
+                </div>
+                <ul className="space-y-1.5 text-xs text-stone-600">
+                  {recipe.ingredients.map((ing, idx) => {
+                    const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                    return (
+                      <li key={idx} className="flex items-baseline justify-between py-0.5 border-b border-stone-50">
+                        <span className="font-medium text-stone-700">{ing.name}</span>
+                        <span className="text-stone-500 text-[11px]">
+                          {scaledQty} {ing.unit} {ing.supermarket_ref ? `(${ing.supermarket_ref})` : ''}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
 
-              {/* Enlace directo a la receta y elaboración paso a paso */}
-              <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-[11px] text-stone-500 font-medium">¿Cómo prepararlo?</span>
-                <div className="flex items-center gap-1.5">
-                  <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent('receta paso a paso ' + recipe.title)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
-                    title="Ver elaboración paso a paso en la web"
-                  >
-                    <ExternalLink className="w-3 h-3 text-stone-500" />
-                    <span>Pasos Web</span>
-                  </a>
-                  <a
-                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ' + recipe.title)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
-                    title="Ver receta en vídeo en YouTube"
-                  >
-                    <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
-                    <span>Vídeo</span>
-                  </a>
+                {/* Enlace directo al plato principal y elaboración paso a paso */}
+                <div className="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] text-stone-500 font-medium">¿Cómo prepararlo?</span>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent('receta paso a paso ' + recipe.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
+                      title="Ver elaboración paso a paso en la web"
+                    >
+                      <ExternalLink className="w-3 h-3 text-stone-500" />
+                      <span>Pasos Web</span>
+                    </a>
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ' + recipe.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
+                      title="Ver receta en vídeo en YouTube"
+                    >
+                      <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                      <span>Vídeo</span>
+                    </a>
+                  </div>
                 </div>
               </div>
+
+              {/* Sección 2: Ensalada Acompañamiento */}
+              {saladSide && saladSide.ingredients && saladSide.ingredients.length > 0 && (
+                <div className="pt-3 border-t border-stone-100">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#2e5632] mb-2">
+                    <span className="flex items-center gap-1">
+                      <Leaf className="w-3.5 h-3.5 text-[#3a633d]" />
+                      Ensalada: {saladSide.name} ({activeMembersCount} personas):
+                    </span>
+                    <span className="text-[10px] text-stone-400 font-normal">Mercadona / Aldi</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-stone-600">
+                    {saladSide.ingredients.map((ing, idx) => {
+                      const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                      return (
+                        <li key={idx} className="flex items-baseline justify-between py-0.5 border-b border-emerald-50">
+                          <span className="font-medium text-stone-700">{ing.name}</span>
+                          <span className="text-stone-500 text-[11px]">
+                            {scaledQty} {ing.unit} {ing.supermarket_ref ? `(${ing.supermarket_ref})` : ''}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Paso a paso ensalada */}
+                  <div className="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[11px] text-[#2e5632] font-medium">¿Cómo preparar la ensalada?</span>
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent('receta ensalada paso a paso ' + saladSide.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-semibold transition-colors border border-emerald-200"
+                        title="Ver preparación de ensalada en la web"
+                      >
+                        <ExternalLink className="w-3 h-3 text-emerald-600" />
+                        <span>Pasos Web</span>
+                      </a>
+                      <a
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ensalada ' + saladSide.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
+                        title="Ver preparación en vídeo en YouTube"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                        <span>Vídeo</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

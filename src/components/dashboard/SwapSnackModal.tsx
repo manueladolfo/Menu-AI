@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ExternalLink,
   BookOpen,
+  Play,
 } from 'lucide-react';
 
 interface SwapSnackModalProps {
@@ -297,16 +298,28 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
                       <BookOpen className="w-3.5 h-3.5 text-amber-700" />
                       <span>Ver elaboración y combinaciones:</span>
                     </div>
-                    <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent('receta snack ' + aiSnack.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
-                      title="Ver preparación, combinaciones y consejos en Google"
-                    >
-                      <ExternalLink className="w-3 h-3 text-stone-500" />
-                      <span>Ver preparación y pasos</span>
-                    </a>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent('receta snack ' + aiSnack.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
+                        title="Ver preparación, combinaciones y consejos en Google"
+                      >
+                        <ExternalLink className="w-3 h-3 text-stone-500" />
+                        <span>Pasos Web</span>
+                      </a>
+                      <a
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta snack ' + aiSnack.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
+                        title="Ver preparación en vídeo en YouTube"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                        <span>Vídeo</span>
+                      </a>
+                    </div>
                   </div>
 
                   {/* User Opt-In Checkbox */}
@@ -512,7 +525,7 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
                       Listo al instante
                     </span>
 
-                    <div className="flex items-center gap-2 justify-end">
+                    <div className="flex items-center gap-1.5 justify-end flex-wrap">
                       <a
                         href={`https://www.google.com/search?q=${encodeURIComponent('receta snack ' + snack.name)}`}
                         target="_blank"
@@ -521,7 +534,17 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
                         title="Ver preparación e ideas en la web"
                       >
                         <ExternalLink className="w-3 h-3 text-stone-400" />
-                        <span>Ideas</span>
+                        <span>Pasos Web</span>
+                      </a>
+                      <a
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta snack ' + snack.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition-colors border border-red-200"
+                        title="Ver preparación en vídeo en YouTube"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                        <span>Vídeo</span>
                       </a>
                       <button
                         onClick={() => handleSelectSnack(snack)}
