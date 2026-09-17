@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import type { DayOfWeek, FamilyMember, GroceryItem, MealType, Recipe, QuickSnack, FreshSaladSide } from '../types';
 import { INITIAL_MEMBERS } from '../data/initialMembers';
 import { INITIAL_RECIPES } from '../data/initialRecipes';
@@ -8,6 +8,8 @@ import { calculateMemberNutritionalTargets, getActiveFamilyTargets } from '../se
 import { generateMenuWithGemini } from '../services/geminiService';
 import type { GenerateWithAIOptions } from '../services/geminiService';
 import { getSupabaseClient } from '../services/supabaseClient';
+
+export type CloudSyncStatus = 'synced' | 'syncing' | 'offline' | 'local';
 
 interface FamilyMenuContextType {
   members: FamilyMember[];
@@ -21,6 +23,7 @@ interface FamilyMenuContextType {
   customSalads: FreshSaladSide[];
   customSnacks: QuickSnack[];
   activeDay: DayOfWeek;
+  syncStatus: CloudSyncStatus;
   setActiveDay: (day: DayOfWeek) => void;
   addMember: (member: Omit<FamilyMember, 'id'>) => void;
   updateMember: (member: FamilyMember) => void;
@@ -227,6 +230,149 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SNACKS, JSON.stringify(selectedSnackIds));
   }, [selectedSnackIds]);
+
+  // ==============================================================================
+  // SINCRONIZACIÓN EN LA NUBE CON SUPABASE (Bidireccional + Realtime)
+  // Permite que cualquier miembro de la familia abra la app desde su móvil
+  // y comparta el mismo menú, cambios y lista de la compra en tiempo real.
+  // ==============================================================================
+  const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>('local');
+  const isInitialLoad = useRef(true);
+  const isIncomingRemoteUpdate = useRef(false);
+
+  // 1. Descarga inicial y suscripción a cambios en tiempo real desde Supabase
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setSyncStatus('local');
+      return;
+    }
+
+    setSyncStatus('syncing');
+
+    // Cargar datos remotos compartidos
+    const loadRemoteState = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('family_sync')
+          .select('*')
+          .eq('id', 'family_default')
+          .single();
+
+        if (data && !error) {
+          isIncomingRemoteUpdate.current = true;
+          if (data.members && Array.isArray(data.members) && data.members.length > 0) {
+            setMembers(data.members);
+          }
+          if (data.weekly_meals && Object.keys(data.weekly_meals).length > 0) {
+            setWeeklyMeals(data.weekly_meals);
+          }
+          if (data.weekly_salads && Object.keys(data.weekly_salads).length > 0) {
+            setWeeklySalads(data.weekly_salads);
+          }
+          if (data.weekly_snacks && Object.keys(data.weekly_snacks).length > 0) {
+            setWeeklySnacks(data.weekly_snacks);
+          }
+          if (data.custom_recipes && Array.isArray(data.custom_recipes)) {
+            setCustomRecipes(data.custom_recipes);
+          }
+          if (data.custom_salads && Array.isArray(data.custom_salads)) {
+            setCustomSalads(data.custom_salads);
+          }
+          if (data.custom_snacks && Array.isArray(data.custom_snacks)) {
+            setCustomSnacks(data.custom_snacks);
+          }
+          if (data.grocery_checks && typeof data.grocery_checks === 'object') {
+            setGroceryChecks(data.grocery_checks);
+          }
+          setSyncStatus('synced');
+          setTimeout(() => {
+            isIncomingRemoteUpdate.current = false;
+            isInitialLoad.current = false;
+          }, 400);
+        } else {
+          // Si es la primera vez que se usa y no existe la fila, se creará en el siguiente guardado
+          setSyncStatus('synced');
+          isInitialLoad.current = false;
+        }
+      } catch (err) {
+        console.warn('Error conectando con Supabase:', err);
+        setSyncStatus('offline');
+        isInitialLoad.current = false;
+      }
+    };
+
+    loadRemoteState();
+
+    // Suscripción Realtime para actualizar la pantalla al instante si otro familiar hace un cambio
+    const channel = supabase
+      .channel('family_sync_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'family_sync', filter: 'id=eq.family_default' },
+        (payload: any) => {
+          const newData = payload.new;
+          if (newData) {
+            isIncomingRemoteUpdate.current = true;
+            if (newData.members && Array.isArray(newData.members)) setMembers(newData.members);
+            if (newData.weekly_meals) setWeeklyMeals(newData.weekly_meals);
+            if (newData.weekly_salads) setWeeklySalads(newData.weekly_salads);
+            if (newData.weekly_snacks) setWeeklySnacks(newData.weekly_snacks);
+            if (newData.custom_recipes) setCustomRecipes(newData.custom_recipes);
+            if (newData.custom_salads) setCustomSalads(newData.custom_salads);
+            if (newData.custom_snacks) setCustomSnacks(newData.custom_snacks);
+            if (newData.grocery_checks) setGroceryChecks(newData.grocery_checks);
+            setSyncStatus('synced');
+            setTimeout(() => {
+              isIncomingRemoteUpdate.current = false;
+            }, 400);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // 2. Subir cambios automáticamente a Supabase cuando el usuario modifica platos, miembros o compra
+  useEffect(() => {
+    if (isInitialLoad.current || isIncomingRemoteUpdate.current) return;
+
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    setSyncStatus('syncing');
+    const timer = setTimeout(async () => {
+      try {
+        const { error } = await supabase.from('family_sync').upsert({
+          id: 'family_default',
+          updated_at: new Date().toISOString(),
+          members,
+          weekly_meals: weeklyMeals,
+          weekly_salads: weeklySalads,
+          weekly_snacks: weeklySnacks,
+          custom_recipes: customRecipes,
+          custom_salads: customSalads,
+          custom_snacks: customSnacks,
+          grocery_checks: groceryChecks,
+        });
+
+        if (error) {
+          console.warn('Error guardando en Supabase:', error);
+          setSyncStatus('offline');
+        } else {
+          setSyncStatus('synced');
+        }
+      } catch (err) {
+        console.warn('Fallo de red en sync con Supabase:', err);
+        setSyncStatus('offline');
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [members, weeklyMeals, weeklySalads, weeklySnacks, customRecipes, customSalads, customSnacks, groceryChecks]);
 
   const activeTargets = useMemo(() => getActiveFamilyTargets(members), [members]);
   const activeMembersCount = Math.max(1, activeTargets.activeCount);
@@ -470,6 +616,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         customSalads,
         customSnacks,
         activeDay,
+        syncStatus,
         setActiveDay,
         addMember,
         updateMember,

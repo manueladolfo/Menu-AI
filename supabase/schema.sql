@@ -112,6 +112,35 @@ CREATE POLICY "Usuarios pueden insertar o modificar sus menús semanales"
     USING (auth.uid() = user_id OR user_id IS NULL);
 
 -- ==============================================================================
+-- 5. TABLA DE SINCRONIZACIÓN FAMILIAR EN TIEMPO REAL (family_sync)
+-- Permite que todos los móviles de la familia (padres e hijos) compartan
+-- el mismo menú, recetas de IA, ensaladas, snacks y lista de compra sin necesidad
+-- de introducir usuarios y contraseñas separados en cada teléfono.
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.family_sync (
+    id TEXT PRIMARY KEY DEFAULT 'family_default',
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    members JSONB DEFAULT '[]'::jsonb,
+    weekly_meals JSONB DEFAULT '{}'::jsonb,
+    weekly_salads JSONB DEFAULT '{}'::jsonb,
+    weekly_snacks JSONB DEFAULT '{}'::jsonb,
+    custom_recipes JSONB DEFAULT '[]'::jsonb,
+    custom_salads JSONB DEFAULT '[]'::jsonb,
+    custom_snacks JSONB DEFAULT '[]'::jsonb,
+    grocery_checks JSONB DEFAULT '{}'::jsonb
+);
+
+ALTER TABLE public.family_sync ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Sincronizacion familiar compartida para lectura y escritura"
+    ON public.family_sync FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Habilitar Realtime para family_sync (para que se sincronicen los móviles al instante)
+ALTER PUBLICATION supabase_realtime ADD TABLE public.family_sync;
+
+-- ==============================================================================
 -- SEMILLA DE DATOS (SEED DATA): Recetas base equilibradas estilo Mercadona / Aldi
 -- ==============================================================================
 INSERT INTO public.recipes (title, description, type, prep_time, difficulty, batch_cooking, batch_notes, diet_adaptation, emoji, macros, ingredients)
