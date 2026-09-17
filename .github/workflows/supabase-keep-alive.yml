@@ -1,0 +1,36 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Se ejecuta cada 6 horas (a las 00:00, 06:00, 12:00 y 18:00 UTC) para evitar que Supabase pause el proyecto por inactividad
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Permite ejecutarlo de forma manual desde la pestaña Actions de GitHub
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping principal a Supabase (PostgREST Keep Alive)
+        run: |
+          echo "Generando tráfico activo a la base de datos de Supabase..."
+          curl -f -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/family_sync?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          echo "Ping a family_sync completado con éxito."
+
+      - name: Registro dinámico de actividad (Escritura en keep_alive_pings)
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_pings" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"run_id": "${{ github.run_id }}", "actor": "${{ github.actor }}", "status": "active_ping"}')
+          echo "Respuesta de keep_alive_pings: HTTP $HTTP_CODE"
+
+      - name: Limpiar registros antiguos (Mayores de 15 días)
+        run: |
+          THRESHOLD_DATE=$(date -u -d '15 days ago' +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-15d +'%Y-%m-%dT%H:%M:%SZ')
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_pings?created_at=lt.$THRESHOLD_DATE" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          echo "Mantenimiento completado con éxito."
