@@ -3,35 +3,35 @@
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FBA024" />
       <stop offset="50%" stop-color="#F97316" />
-      <stop offset="100%" stop-color="#C26546" />
+      <stop offset="100%" stop-color="#C25032" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#7C2D12" flood-opacity="0.3" />
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#7C2D12" flood-opacity="0.25" />
     </filter>
   </defs>
 
-  <!-- Background Squircle with warm Mediterranean gradient -->
-  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+  <!-- Full-Bleed 100% Background (no white border, occupies whole icon) -->
+  <rect width="512" height="512" fill="url(#bgGrad)" />
 
-  <!-- Chef Hat Icon centered and styled -->
-  <g filter="url(#shadow)" fill="#FFFFFF">
+  <!-- Prominent Chef Hat Icon centered (occupies 70% of canvas) -->
+  <g filter="url(#glow)" fill="#FFFFFF">
     <!-- Center top puff -->
-    <circle cx="256" cy="180" r="90" />
+    <circle cx="256" cy="184" r="92" />
     <!-- Left puff -->
-    <circle cx="170" cy="225" r="76" />
+    <circle cx="164" cy="225" r="79" />
     <!-- Right puff -->
-    <circle cx="342" cy="225" r="76" />
+    <circle cx="348" cy="225" r="79" />
 
-    <!-- Body fill -->
-    <polygon points="144,280 368,280 380,340 132,340" />
+    <!-- Mid body fill -->
+    <polygon points="118,271 394,271 374,333 138,333" />
 
     <!-- Hat Base Band -->
-    <rect x="132" y="325" width="248" height="82" rx="25" />
+    <rect x="123" y="333" width="266" height="72" rx="22" />
   </g>
 
   <!-- Accent line in the band -->
-  <line x1="175" y1="366" x2="337" y2="366" stroke="#C26546" stroke-width="12" stroke-linecap="round" opacity="0.65" />
+  <line x1="146" y1="369" x2="366" y2="369" stroke="#C25032" stroke-width="13" stroke-linecap="round" opacity="0.8" />
 
-  <!-- Golden Sparkle (Culinary Inspiration) -->
-  <path d="M 390 115 Q 390 145 420 145 Q 390 145 390 175 Q 390 145 360 145 Q 390 145 390 115 Z" fill="#FEF08A" />
+  <!-- Golden Sparkle (Star) in top-right -->
+  <path d="M 415 102 L 423 118 L 441 120 L 427 131 L 432 148 L 415 137 L 398 148 L 403 131 L 389 120 L 407 118 Z" fill="#FEF08A" />
 </svg>
