@@ -145,7 +145,7 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in">
       <div className="bg-[#faf7f2] rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-amber-950/10">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-amber-950/5 flex items-center justify-between bg-white/90">
+        <div className="p-4 sm:p-5 border-b border-amber-950/5 flex items-center justify-between bg-white/90 shrink-0">
           <div>
             <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-800">
               <SmilePlus className="w-3.5 h-3.5 text-amber-700" />
@@ -166,8 +166,10 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
           </button>
         </div>
 
-        {/* Top Action Bar: Search + Toggle AI */}
-        <div className="p-3 sm:p-4 bg-white/60 border-b border-amber-950/5 space-y-3">
+        {/* Modal Body: en móvil se unifica el scroll para que el snack de IA nunca se corte; en escritorio se conserva la barra superior fija y el listado con scroll propio */}
+        <div className="flex-1 overflow-y-auto min-h-0 sm:overflow-hidden sm:flex sm:flex-col divide-y sm:divide-y-0 divide-amber-950/5">
+          {/* Top Action Bar: Search + Toggle AI */}
+          <div className="p-3 sm:p-4 bg-white/60 sm:border-b sm:border-amber-950/5 space-y-3 sm:shrink-0">
           <div className="flex gap-2 items-center">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -250,7 +252,7 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
 
               {/* Generated Snack Proposal Card */}
               {aiSnack && (
-                <div className="p-3.5 rounded-2xl bg-white border-2 border-amber-200 shadow-xs space-y-3">
+                <div className="p-3.5 rounded-2xl bg-white border-2 border-amber-200 shadow-xs space-y-3 sm:max-h-[52vh] sm:overflow-y-auto">
                   <div className="flex items-start gap-3">
                     <span className="text-3xl select-none">{aiSnack.emoji || '🍿'}</span>
                     <div className="flex-1 min-w-0">
@@ -434,7 +436,7 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
         </div>
 
         {/* Unified List of Snacks */}
-        <div className="p-3 sm:p-5 overflow-y-auto space-y-3 flex-1">
+        <div className="p-3 sm:p-5 space-y-3 sm:overflow-y-auto sm:flex-1">
           {filteredSnacks.length === 0 ? (
             <div className="text-center py-10 bg-white/80 rounded-2xl border border-dashed border-stone-200">
               <p className="text-sm font-bold text-stone-700">No encontramos snacks con ese filtro</p>
@@ -535,9 +537,10 @@ export const SwapSnackModal: React.FC<SwapSnackModalProps> = ({
             })
           )}
         </div>
+        </div>
 
         {/* Footer */}
-        <div className="p-3 sm:p-4 bg-white/80 border-t border-amber-950/5 flex items-center justify-between">
+        <div className="p-3 sm:p-4 bg-white/80 border-t border-amber-950/5 flex items-center justify-between shrink-0">
           <span className="text-xs text-stone-500">
             {filteredSnacks.length} opciones disponibles
           </span>
