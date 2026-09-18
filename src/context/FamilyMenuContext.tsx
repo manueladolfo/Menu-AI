@@ -6,7 +6,7 @@ import { DAILY_FRESH_SIDES, QUICK_SNACKS } from '../data/initialSaladsAndSnacks'
 import { generateBalancedWeeklyMenu, generateWeeklySalads, generateWeeklySnacks, getMealSaladSide, DAYS_OF_WEEK } from '../services/menuAlgorithm';
 import { calculateMemberNutritionalTargets, getActiveFamilyTargets } from '../services/nutritionCalculator';
 import { generateMenuWithGemini } from '../services/geminiService';
-import type { GenerateWithAIOptions } from '../services/geminiService';
+import type { GenerateWithAIOptions, DayMenuProposal } from '../services/geminiService';
 import { getSupabaseClient } from '../services/supabaseClient';
 
 export type CloudSyncStatus = 'synced' | 'syncing' | 'offline' | 'local';
@@ -37,6 +37,7 @@ interface FamilyMenuContextType {
   addRecipeToCatalog: (recipe: Recipe) => void;
   addSaladToCatalog: (salad: FreshSaladSide) => void;
   addSnackToCatalog: (snack: QuickSnack) => void;
+  applyFullDayMenu: (day: DayOfWeek, proposal: DayMenuProposal) => void;
   groceryItems: GroceryItem[];
   toggleGroceryItem: (name: string) => void;
   resetGroceryChecks: () => void;
@@ -502,6 +503,23 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   };
 
+  const applyFullDayMenu = (day: DayOfWeek, proposal: DayMenuProposal) => {
+    setWeeklyMeals((prev) => ({
+      ...prev,
+      [`${day}_almuerzo`]: proposal.lunch,
+      [`${day}_cena`]: proposal.dinner,
+    }));
+    setWeeklySalads((prev) => ({
+      ...prev,
+      [`${day}_almuerzo`]: proposal.lunchSalad,
+      [`${day}_cena`]: proposal.dinnerSalad,
+    }));
+    setWeeklySnacks((prev) => ({
+      ...prev,
+      [day]: proposal.snack,
+    }));
+  };
+
   const toggleSnackInGrocery = (snackId: string) => {
     setSelectedSnackIds((prev) =>
       prev.includes(snackId) ? prev.filter((id) => id !== snackId) : [...prev, snackId]
@@ -630,6 +648,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         addRecipeToCatalog,
         addSaladToCatalog,
         addSnackToCatalog,
+        applyFullDayMenu,
         groceryItems,
         toggleGroceryItem,
         resetGroceryChecks,

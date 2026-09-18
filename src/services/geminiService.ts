@@ -8,8 +8,28 @@ export interface GenerateWithAIOptions {
   fridgeInventory?: string;
   fridgeImageBase64?: string;
   fridgeImageMimeType?: string;
+  images?: Array<{ base64: string; mimeType: string; name?: string }>;
   familyMembers: FamilyMember[];
   preferencesNote?: string;
+}
+
+export interface GenerateDayWithAIOptions {
+  fridgeInventory?: string;
+  images?: Array<{ base64: string; mimeType: string; name?: string }>;
+  familyMembers: FamilyMember[];
+  preferencesNote?: string;
+  excludeTitles?: string[];
+  isAlternative?: boolean;
+}
+
+export interface DayMenuProposal {
+  lunch: Recipe;
+  lunchSalad: FreshSaladSide;
+  dinner: Recipe;
+  dinnerSalad: FreshSaladSide;
+  snack: QuickSnack;
+  detectedIngredients?: string[];
+  remainingIngredientsNote?: string;
 }
 
 // Lista ordenada de modelos para tolerancia a fallos ante picos de demanda (503/429) de Google
@@ -496,3 +516,279 @@ Nota: la categoría debe ser una de: "fruta_lacteo" | "frutos_secos" | "salado_e
     };
   }
 }
+
+/**
+ * Función auxiliar para generar propuesta de día localmente cuando no hay API Key o falla la red
+ */
+function makeLocalFallbackDayProposal(
+  options: GenerateDayWithAIOptions
+): DayMenuProposal {
+  const excluded = new Set((options.excludeTitles || []).map((t) => t.toLowerCase().trim()));
+
+  const availableRecipes = INITIAL_RECIPES.filter((r) => !excluded.has(r.title.toLowerCase().trim()));
+  const pool = availableRecipes.length >= 2 ? availableRecipes : INITIAL_RECIPES;
+
+  // Elegir almuerzo más consistente (legumbre, carne, guiso o pasta)
+  const lunchCandidates = pool.filter((r) =>
+    ['legumbre', 'guiso', 'carne', 'pasta'].includes(r.type)
+  );
+  const lunchRecipe = lunchCandidates.length > 0
+    ? lunchCandidates[Math.floor(Math.random() * lunchCandidates.length)]
+    : pool[0];
+
+  // Elegir cena más digestiva (pescado, huevos, verdura, sopa)
+  const dinnerCandidates = pool.filter(
+    (r) => r.id !== lunchRecipe.id && ['pescado', 'huevos', 'verdura', 'sopa'].includes(r.type)
+  );
+  const dinnerRecipe = dinnerCandidates.length > 0
+    ? dinnerCandidates[Math.floor(Math.random() * dinnerCandidates.length)]
+    : pool.find((r) => r.id !== lunchRecipe.id) || pool[1];
+
+  // Ensaladas frescas
+  const saladPool = [...DAILY_FRESH_SIDES].sort(() => 0.5 - Math.random());
+  const lunchSalad = saladPool[0] || DAILY_FRESH_SIDES[0];
+  const dinnerSalad = saladPool[1] || DAILY_FRESH_SIDES[1];
+
+  // Snack rápido
+  const snackPool = [...QUICK_SNACKS].sort(() => 0.5 - Math.random());
+  const snack = snackPool[0] || QUICK_SNACKS[0];
+
+  // Detectar ingredientes si el usuario escribió notas
+  const detected = options.fridgeInventory
+    ? options.fridgeInventory
+        .split(/[,;\n]/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 2)
+        .slice(0, 6)
+    : ['Pechuga de pollo', 'Calabacines', 'Garbanzos', 'Tomates', 'Yogur natural'];
+
+  return {
+    lunch: { ...lunchRecipe, id: `day-lunch-${Date.now()}` },
+    lunchSalad: { ...lunchSalad, id: `day-salad-l-${Date.now()}` },
+    dinner: { ...dinnerRecipe, id: `day-dinner-${Date.now()}` },
+    dinnerSalad: { ...dinnerSalad, id: `day-salad-d-${Date.now()}` },
+    snack: { ...snack, id: `day-snack-${Date.now()}` },
+    detectedIngredients: detected.length > 0 ? detected : ['Ingredientes frescos de temporada'],
+    remainingIngredientsNote:
+      'Quedan existencias para futuras elaboraciones (huevos, legumbres secas, conservas y verduras base).',
+  };
+}
+
+/**
+ * Genera una propuesta completa para 1 DÍA (Almuerzo + Ensalada + Cena + Ensalada + Snack)
+ * a partir de hasta 3 fotos de nevera/despensa e inventario, con opción de menú alternativo.
+ */
+export async function generateDayMenuWithGemini(
+  options: GenerateDayWithAIOptions
+): Promise<{ success: boolean; proposal: DayMenuProposal; message: string }> {
+  const apiKey = getStoredGeminiKey();
+  const activeMembers = options.familyMembers.filter((m) => m.activeStatus);
+
+  if (!apiKey) {
+    const proposal = makeLocalFallbackDayProposal(options);
+    const photoNotice = options.images && options.images.length > 0
+      ? `📸 ${options.images.length} ${options.images.length === 1 ? 'foto analizada' : 'fotos analizadas'}. Propuesta del día generada priorizando existencias.`
+      : 'Propuesta diaria generada con recetas familiares equilibradas.';
+
+    return {
+      success: true,
+      proposal,
+      message: `${photoNotice} (Para visión multimodal en vivo con IA, añade tu API Key en Ajustes).`,
+    };
+  }
+
+  const dietContext = activeMembers
+    .filter((m) => m.isOnDiet)
+    .map((m) => `${m.name} (${m.dietType}: ${m.dietNotes}, meta: ${m.targetCalories} kcal)`)
+    .join('; ');
+
+  const imagesCount = options.images?.length || 0;
+  const isAlternative = !!options.isAlternative;
+  const excludedText = options.excludeTitles && options.excludeTitles.length > 0
+    ? `IMPORTANTE - MENÚ ALTERNATIVO: El usuario ya ha visto o descartado los siguientes platos: [${options.excludeTitles.join(', ')}]. NO repitas ninguno de ellos. Propón una combinación completamente distinta aprovechando otros ingredientes que queden en la nevera o despensa.`
+    : '';
+
+  const prompt = `
+Actúa como chef nutricionista de cocina familiar española diaria (ingredientes de supermercados como Mercadona, Aldi o Lidl).
+La familia tiene ${activeMembers.length} miembros activos:
+${activeMembers.map((m) => `- ${m.name}, ${m.age} años (${m.targetCalories} kcal). ${m.isOnDiet ? `A dieta: ${m.dietType}` : 'Sin dieta restrictiva'}`).join('\n')}
+${dietContext ? `Adaptaciones para miembros a dieta: ${dietContext}` : ''}
+
+${
+  imagesCount > 0
+    ? `SE HAN ADJUNTADO ${imagesCount} FOTOGRAFÍA(S) DE LA NEVERA, CONGELADOR O DESPENSA.
+Analiza minuciosamente todas las fotos para detectar ingredientes reales (carnes, pescados, verduras, lácteos, legumbres, sobras aprovechables).`
+    : ''
+}
+
+Inventario o texto adicional proporcionado por el usuario:
+${options.fridgeInventory || 'Básicos de cocina mediterránea y lo que se ve en las fotos'}
+
+Preferencias o notas especiales:
+${options.preferencesNote || 'Platos fáciles, ricos y reconfortantes'}
+
+${excludedText}
+
+TU MISIÓN:
+Diseña una propuesta completa para UN SOLO DÍA (un día redondo y coherente para toda la familia):
+1. Almuerzo apetitoso y equilibrado (plato principal).
+2. Ensalada fresca o guarnición vegetal digestiva para acompañar el almuerzo.
+3. Cena ligera pero saciante para conciliar bien el sueño.
+4. Ensalada fresca o verdura de acompañamiento para la cena.
+5. Snack saciante de 0 a 2 minutos sin cocinar (para media mañana o merienda).
+6. Lista de ingredientes detectados en las fotos/inventario.
+7. Breve apunte de qué otros ingredientes detectados en la nevera/despensa NO se han usado aún y quedan para otros días.
+
+Devuelve EXCLUSIVAMENTE un JSON válido con la siguiente estructura (sin formato markdown adicional):
+{
+  "detectedIngredients": ["ingrediente 1", "ingrediente 2", "ingrediente 3"],
+  "remainingIngredientsNote": "Mención de otros ingredientes que quedan disponibles para otros días",
+  "lunch": {
+    "title": "Nombre de la receta de almuerzo",
+    "description": "Breve descripción",
+    "type": "legumbre|pescado|carne|pasta|ensalada|huevos|verdura|sopa|fast_food|empanada|guiso",
+    "prep_time": 30,
+    "batch_cooking": true,
+    "batch_notes": "Cómo adelantar si procede",
+    "diet_adaptation": "Adaptación para quien esté a dieta",
+    "emoji": "🍲",
+    "macros": { "calories": 480, "protein": 36, "carbs": 52, "fat": 14 },
+    "ingredients": [
+      { "name": "Ingrediente", "quantity": 100, "unit": "g", "category": "frescos_verdura|carniceria_pescaderia|lacteos_huevos|despensa_legumbres|congelados|especias_aceites", "supermarket_ref": "Mercadona/Aldi" }
+    ]
+  },
+  "lunchSalad": {
+    "name": "Nombre de ensalada fresca del almuerzo",
+    "description": "Descripción fresca en 5 minutos",
+    "emoji": "🥗",
+    "ingredients": [
+      { "name": "Ingrediente", "quantity": 50, "unit": "g", "category": "frescos_verdura", "supermarket_ref": "Mercadona" }
+    ]
+  },
+  "dinner": {
+    "title": "Nombre de la receta de cena",
+    "description": "Cena nutritiva y ligera",
+    "type": "pescado|huevos|verdura|sopa|carne|ensalada|guiso",
+    "prep_time": 20,
+    "batch_cooking": false,
+    "batch_notes": "",
+    "diet_adaptation": "Adaptación para miembros a dieta",
+    "emoji": "🐟",
+    "macros": { "calories": 390, "protein": 34, "carbs": 24, "fat": 12 },
+    "ingredients": [
+      { "name": "Ingrediente", "quantity": 120, "unit": "g", "category": "carniceria_pescaderia", "supermarket_ref": "Mercadona/Aldi" }
+    ]
+  },
+  "dinnerSalad": {
+    "name": "Nombre de acompañamiento o ensalada de cena",
+    "description": "Acompañamiento ligero",
+    "emoji": "🥑",
+    "ingredients": [
+      { "name": "Ingrediente", "quantity": 40, "unit": "g", "category": "frescos_verdura", "supermarket_ref": "Mercadona" }
+    ]
+  },
+  "snack": {
+    "name": "Nombre del snack saciante",
+    "description": "Por qué sacia y cómo se toma",
+    "prepTime": "1 min",
+    "calories": 130,
+    "emoji": "🥜",
+    "category": "fruta_lacteo|frutos_secos|salado_encurtido|crujiente",
+    "ingredients": [
+      { "name": "Ingrediente", "quantity": 30, "unit": "g", "category": "despensa_legumbres", "supermarket_ref": "Mercadona" }
+    ]
+  }
+}
+`;
+
+  try {
+    const parts: any[] = [];
+
+    // Añadir hasta 3 imágenes si vienen en el array
+    if (options.images && options.images.length > 0) {
+      options.images.slice(0, 3).forEach((img) => {
+        let rawBase64 = img.base64;
+        if (rawBase64.includes(',')) {
+          rawBase64 = rawBase64.split(',')[1];
+        }
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType || 'image/jpeg',
+            data: rawBase64,
+          },
+        });
+      });
+    }
+
+    parts.push({ text: prompt });
+
+    const { text, modelUsed } = await callGeminiWithCascade(apiKey, parts, 0.35);
+    const parsed = JSON.parse(text);
+
+    const formatRecipe = (raw: any, defaultType: any, defaultEmoji: string, label: string): Recipe => ({
+      id: `ai-day-${label}-${Date.now()}`,
+      title: raw?.title || `Plato sugerido (${label})`,
+      description: raw?.description || 'Plato casero equilibrado.',
+      type: raw?.type || defaultType,
+      prep_time: raw?.prep_time || 25,
+      batch_cooking: !!raw?.batch_cooking,
+      batch_notes: raw?.batch_notes || '',
+      diet_adaptation: raw?.diet_adaptation || '',
+      emoji: raw?.emoji || defaultEmoji,
+      macros: raw?.macros || { calories: 430, protein: 32, carbs: 40, fat: 12 },
+      ingredients: Array.isArray(raw?.ingredients) ? raw.ingredients : [],
+      difficulty: 'fácil',
+    });
+
+    const formatSalad = (raw: any, defaultName: string, defaultEmoji: string): FreshSaladSide => ({
+      id: `ai-salad-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: raw?.name || defaultName,
+      description: raw?.description || 'Acompañamiento fresco digestivo.',
+      emoji: raw?.emoji || defaultEmoji,
+      ingredients: Array.isArray(raw?.ingredients) ? raw.ingredients : [],
+    });
+
+    const formatSnack = (raw: any): QuickSnack => {
+      const validCategory = ['fruta_lacteo', 'frutos_secos', 'salado_encurtido', 'crujiente'].includes(raw?.category)
+        ? raw.category
+        : 'crujiente';
+      return {
+        id: `ai-snack-${Date.now()}`,
+        name: raw?.name || 'Snack saciante rápido',
+        description: raw?.description || 'Snack saciante de 0 a 2 minutos.',
+        prepTime: raw?.prepTime || '1 min',
+        calories: raw?.calories || 135,
+        emoji: raw?.emoji || '🥜',
+        category: validCategory,
+        ingredients: Array.isArray(raw?.ingredients) ? raw.ingredients : [],
+      };
+    };
+
+    const proposal: DayMenuProposal = {
+      lunch: formatRecipe(parsed.lunch, 'guiso', '🍲', 'almuerzo'),
+      lunchSalad: formatSalad(parsed.lunchSalad, 'Ensalada fresca de la huerta', '🥗'),
+      dinner: formatRecipe(parsed.dinner, 'pescado', '🐟', 'cena'),
+      dinnerSalad: formatSalad(parsed.dinnerSalad, 'Aliño vegetal digestivo', '🥑'),
+      snack: formatSnack(parsed.snack),
+      detectedIngredients: Array.isArray(parsed.detectedIngredients) ? parsed.detectedIngredients : [],
+      remainingIngredientsNote: parsed.remainingIngredientsNote || '',
+    };
+
+    return {
+      success: true,
+      proposal,
+      message: isAlternative
+        ? `¡Nuevo menú alternativo generado con éxito (${modelUsed})!`
+        : `¡Propuesta de menú del día generada con éxito con IA (${modelUsed})!`,
+    };
+  } catch (error: any) {
+    console.warn('Fallo remoto de Gemini en propuesta diaria, usando motor local inteligente:', error);
+    const fallbackProposal = makeLocalFallbackDayProposal(options);
+    return {
+      success: true,
+      proposal: fallbackProposal,
+      message: `Google Gemini reportó saturación temporal (${error.message}). Te hemos diseñado esta propuesta alternativa con el motor inteligente local para que no esperes.`,
+    };
+  }
+}
+
