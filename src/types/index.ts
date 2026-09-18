@@ -122,6 +122,13 @@ export interface FamilyMember {
   targetFatG: number;
 }
 
+export interface GroceryItemUsage {
+  day: DayOfWeek;
+  mealType?: MealType | 'snack';
+  recipeTitle: string;
+  label: string;
+}
+
 export interface GroceryItem {
   id: string;
   name: string;
@@ -131,4 +138,7 @@ export interface GroceryItem {
   supermarketRef?: string;
   checked: boolean;
   recipesUsing: string[];
+  days: DayOfWeek[];
+  usages: GroceryItemUsage[];
 }
+

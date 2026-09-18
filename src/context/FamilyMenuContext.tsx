@@ -535,19 +535,40 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return weeklySnacks[day] || QUICK_SNACKS[0];
   };
 
-  // Generación consolidada y escalada de lista de la compra:
+  // Generación consolidada y escalada de lista de la compra con clasificación por días y platos:
   const groceryItems = useMemo<GroceryItem[]>(() => {
     const itemMap = new Map<string, GroceryItem>();
 
-    const addIngredient = (ing: any, sourceTitle: string, multiplier: number) => {
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const addIngredient = (
+      ing: any,
+      sourceTitle: string,
+      multiplier: number,
+      day: DayOfWeek,
+      mealType?: MealType | 'snack',
+      customLabel?: string
+    ) => {
       const scaledQty = (ing.quantity || 1) * multiplier;
       const normalizedKey = `${ing.name.toLowerCase().trim()}_${ing.unit.toLowerCase().trim()}`;
+      const usageLabel = customLabel || sourceTitle;
 
       if (itemMap.has(normalizedKey)) {
         const existing = itemMap.get(normalizedKey)!;
         existing.totalQuantity += scaledQty;
         if (!existing.recipesUsing.includes(sourceTitle)) {
           existing.recipesUsing.push(sourceTitle);
+        }
+        if (!existing.days.includes(day)) {
+          existing.days.push(day);
+        }
+        if (!existing.usages.some((u) => u.label === usageLabel)) {
+          existing.usages.push({
+            day,
+            mealType,
+            recipeTitle: sourceTitle,
+            label: usageLabel,
+          });
         }
       } else {
         itemMap.set(normalizedKey, {
@@ -559,15 +580,37 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           supermarketRef: ing.supermarket_ref,
           checked: !!groceryChecks[normalizedKey],
           recipesUsing: [sourceTitle],
+          days: [day],
+          usages: [
+            {
+              day,
+              mealType,
+              recipeTitle: sourceTitle,
+              label: usageLabel,
+            },
+          ],
         });
       }
     };
 
-    // 1. Ingredientes de comidas de la semana
-    Object.entries(weeklyMeals).forEach(([_slotKey, recipe]) => {
+    // 1. Ingredientes de comidas de la semana (Almuerzos y Cenas)
+    Object.entries(weeklyMeals).forEach(([slotKey, recipe]) => {
       if (!recipe || !recipe.ingredients) return;
+      const parts = slotKey.split('_');
+      const day = parts[0] as DayOfWeek;
+      const mealType = parts[1] as MealType;
+      const dayLabel = capitalize(day);
+      const mealLabel = mealType === 'almuerzo' ? 'Almuerzo' : 'Cena';
+
       recipe.ingredients.forEach((ing) => {
-        addIngredient(ing, recipe.title, activeMembersCount);
+        addIngredient(
+          ing,
+          recipe.title,
+          activeMembersCount,
+          day,
+          mealType,
+          `${dayLabel} • ${mealLabel}: ${recipe.title}`
+        );
       });
     });
 
@@ -577,8 +620,17 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const key = `${d}_${mType}`;
         const salad = weeklySalads[key] || getMealSaladSide(d, mType);
         if (salad && salad.ingredients) {
+          const dayLabel = capitalize(d);
+          const mealLabel = mType === 'almuerzo' ? 'Almuerzo' : 'Cena';
           salad.ingredients.forEach((ing) => {
-            addIngredient(ing, `🥗 ${salad.name}`, activeMembersCount);
+            addIngredient(
+              ing,
+              `🥗 ${salad.name}`,
+              activeMembersCount,
+              d,
+              mType,
+              `${dayLabel} • Ensalada ${mealLabel}: ${salad.name}`
+            );
           });
         }
       });
@@ -588,8 +640,16 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     DAYS_OF_WEEK.forEach((d) => {
       const snack = weeklySnacks[d];
       if (snack && snack.ingredients) {
+        const dayLabel = capitalize(d);
         snack.ingredients.forEach((ing) => {
-          addIngredient(ing, `🍿 Snack (${d}): ${snack.name}`, 1);
+          addIngredient(
+            ing,
+            `🍿 Snack: ${snack.name}`,
+            1,
+            d,
+            'snack',
+            `${dayLabel} • Snack: ${snack.name}`
+          );
         });
       }
     });
@@ -599,7 +659,14 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const snack = allSnacks.find((s) => s.id === snackId);
       if (snack && snack.ingredients) {
         snack.ingredients.forEach((ing) => {
-          addIngredient(ing, `🍿 Snack extra: ${snack.name}`, 1);
+          addIngredient(
+            ing,
+            `🍿 Snack extra: ${snack.name}`,
+            1,
+            'lunes',
+            'snack',
+            `Snack extra: ${snack.name}`
+          );
         });
       }
     });
