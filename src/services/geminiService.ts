@@ -349,6 +349,162 @@ Devuelve EXCLUSIVAMENTE un JSON válido con la siguiente estructura (sin markdow
   }
 }
 
+export interface GenerateRecipeFromMediaOptions {
+  mediaType: 'image' | 'video';
+  imageBase64?: string;
+  videoFrames?: string[];
+  mimeType?: string;
+  notes?: string;
+  familyMembers?: FamilyMember[];
+}
+
+/**
+ * Convierte una fotografía de un plato o un vídeo de una receta en una receta completa
+ * estructurada para el recetario familiar mediante visión artificial multimodal de Gemini.
+ */
+export async function generateRecipeFromMedia(
+  options: GenerateRecipeFromMediaOptions
+): Promise<{ success: boolean; recipe?: Recipe; message: string }> {
+  const apiKey = getStoredGeminiKey();
+  const dietContext = options.familyMembers
+    ? options.familyMembers
+        .filter((m) => m.activeStatus && m.isOnDiet)
+        .map((m) => `${m.name} (${m.dietType}: ${m.dietNotes})`)
+        .join(', ')
+    : '';
+
+  const prompt = `
+Actúa como un chef y nutricionista experto en gastronomía familiar española y mediterránea.
+${
+  options.mediaType === 'video'
+    ? 'Analiza la secuencia de fotogramas adjunta de un vídeo de receta (que muestra ingredientes, proceso de elaboración y resultado final).'
+    : 'Analiza la fotografía adjunta de un plato elaborado o receta de cocina.'
+}
+${options.notes ? `Notas o detalles adicionales proporcionados por el usuario: "${options.notes}".` : ''}
+${dietContext ? `En la familia hay miembros con objetivos dietéticos: ${dietContext}. Añade una pauta de adaptación.` : ''}
+
+Tu tarea:
+1. Identifica el plato con un nombre claro, apetitoso y reconocible en cocina española.
+2. Deduce los ingredientes exactos necesarios para 4 raciones, con sus cantidades aproximadas y unidades ('g', 'ml', 'ud', 'cucharadas').
+3. Clasifica cada ingrediente en su categoría de pasillo del supermercado (frescos_verdura | carniceria_pescaderia | lacteos_huevos | despensa_legumbres | congelados | especias_aceites).
+4. Estima los macronutrientes por ración (calorías, proteínas, carbohidratos, grasas).
+5. Indica el tiempo de preparación aproximado en minutos, dificultad ('fácil' | 'media' | 'difícil'), si es apta para batch cooking (guardar/recalentar) y consejos de conservación.
+6. Elige un emoji representativo y una adaptación para miembros a dieta.
+
+Devuelve EXCLUSIVAMENTE un JSON válido con la siguiente estructura (sin formato markdown ni texto adicional):
+{
+  "title": "Nombre apetitoso del plato",
+  "description": "Descripción apetitosa y cómo se elabora",
+  "type": "carne|pescado|guiso|legumbre|ensalada|pasta|verdura|huevos|sopa|fast_food|empanada",
+  "prep_time": 30,
+  "difficulty": "fácil|media|difícil",
+  "batch_cooking": true,
+  "batch_notes": "Consejo para preparar con antelación o congelar",
+  "diet_adaptation": "Consejo para adaptar a dietas bajas en calorías o miembros en déficit",
+  "emoji": "🍲",
+  "macros": { "calories": 480, "protein": 36, "carbs": 42, "fat": 16 },
+  "ingredients": [
+    { "name": "Ingrediente", "quantity": 200, "unit": "g", "category": "carniceria_pescaderia", "supermarket_ref": "Mercadona/Aldi" }
+  ]
+}
+`;
+
+  if (!apiKey) {
+    const noteText = options.notes ? options.notes.toLowerCase() : 'plato casero';
+    const isFish = noteText.includes('pescado') || noteText.includes('salmón') || noteText.includes('atún');
+    const isPasta = noteText.includes('pasta') || noteText.includes('espagueti');
+    const isSoup = noteText.includes('sopa') || noteText.includes('crema');
+
+    const demoRecipe: Recipe = {
+      id: `media-recipe-${Date.now()}`,
+      title: options.notes ? options.notes.charAt(0).toUpperCase() + options.notes.slice(1) : (isFish ? 'Salmón al horno con verduras' : isPasta ? 'Pasta fresca con pollo y pesto' : 'Guiso familiar casero'),
+      description: 'Receta extraída a partir de tu archivo multimedia con ingredientes accesibles y equilibrados.',
+      type: isFish ? 'pescado' : isPasta ? 'pasta' : isSoup ? 'sopa' : 'guiso',
+      prep_time: 30,
+      difficulty: 'fácil',
+      batch_cooking: true,
+      batch_notes: 'Conserva en táper hermético en la nevera hasta 3 días.',
+      diet_adaptation: 'Para miembros a dieta: aumentar la guarnición vegetal y reducir salsas o hidratos.',
+      emoji: isFish ? '🐟' : isPasta ? '🍝' : isSoup ? '🥣' : '🍲',
+      macros: { calories: 450, protein: 35, carbs: 40, fat: 14 },
+      ingredients: [
+        { name: 'Ingrediente principal', quantity: 400, unit: 'g', category: isFish ? 'carniceria_pescaderia' : 'carniceria_pescaderia', supermarket_ref: 'Mercadona' },
+        { name: 'Verduras variadas de temporada', quantity: 300, unit: 'g', category: 'frescos_verdura', supermarket_ref: 'Frutería' },
+        { name: 'Aceite de oliva virgen extra', quantity: 15, unit: 'ml', category: 'especias_aceites', supermarket_ref: 'AOVE' },
+        { name: 'Sal y especias al gusto', quantity: 5, unit: 'g', category: 'especias_aceites', supermarket_ref: 'Especias' }
+      ]
+    };
+
+    return {
+      success: true,
+      recipe: demoRecipe,
+      message: 'Receta generada con la lógica del recetario. (Añade tu Gemini API Key en Ajustes para análisis visual en tiempo real con IA).'
+    };
+  }
+
+  try {
+    const parts: any[] = [];
+
+    if (options.mediaType === 'video' && options.videoFrames && options.videoFrames.length > 0) {
+      options.videoFrames.forEach((frame) => {
+        let rawBase64 = frame;
+        if (rawBase64.includes(',')) {
+          rawBase64 = rawBase64.split(',')[1];
+        }
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: rawBase64,
+          },
+        });
+      });
+    } else if (options.imageBase64) {
+      let rawBase64 = options.imageBase64;
+      if (rawBase64.includes(',')) {
+        rawBase64 = rawBase64.split(',')[1];
+      }
+      parts.push({
+        inlineData: {
+          mimeType: options.mimeType || 'image/jpeg',
+          data: rawBase64,
+        },
+      });
+    }
+
+    parts.push({ text: prompt });
+
+    const { text, modelUsed } = await callGeminiWithCascade(apiKey, parts, 0.3);
+    const parsed = JSON.parse(text);
+
+    const recipe: Recipe = {
+      id: `ai-media-${Date.now()}`,
+      title: parsed.title || 'Receta extraída con IA',
+      description: parsed.description || '',
+      type: parsed.type || 'guiso',
+      prep_time: Number(parsed.prep_time) || 25,
+      difficulty: parsed.difficulty || 'fácil',
+      batch_cooking: !!parsed.batch_cooking,
+      batch_notes: parsed.batch_notes || '',
+      diet_adaptation: parsed.diet_adaptation || '',
+      emoji: parsed.emoji || '🍽️',
+      macros: parsed.macros || { calories: 450, protein: 32, carbs: 45, fat: 14 },
+      ingredients: parsed.ingredients || [],
+    };
+
+    return {
+      success: true,
+      recipe,
+      message: `¡Receta creada con éxito desde tu ${options.mediaType === 'video' ? 'vídeo' : 'foto'} por Gemini (${modelUsed})!`,
+    };
+  } catch (err: any) {
+    console.error('Error procesando multimedia con Gemini:', err);
+    return {
+      success: false,
+      message: `No se pudo interpretar el archivo multimedia (${err.message || 'Error de conexión'}).`,
+    };
+  }
+}
+
 /**
  * Genera una ensalada o acompañamiento fresco individual con Google Gemini.
  */

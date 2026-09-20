@@ -52,30 +52,69 @@ export function getMealSaladSide(day: DayOfWeek, mealType: MealType): FreshSalad
   return DAILY_FRESH_SIDES[dayIndex % DAILY_FRESH_SIDES.length];
 }
 
+export type WeeklyMenuPreset = 'balanced' | 'express' | 'batch_cooking' | 'light' | 'family';
+
+export interface WeeklyMenuCriteria {
+  preset?: WeeklyMenuPreset;
+  legumeDays?: number; // 1 | 2
+  fishDays?: number; // 1 | 2 | 3
+  allowCheatMealWeekend?: boolean; // true: permite pizza/burger en fin de semana
+  lightDinnersOnly?: boolean; // true: cenas exclusivamente ligeras (sopa, ensalada, verdura, pescado blanco)
+  maxPrepTimeMinutes?: number; // ej. 25 para modo exprés
+}
+
 /**
  * Genera un menú semanal equilibrado sin repetición interna en la misma semana,
- * combinando legumbres (2 días), pescados (2-3), carnes (2-3), pastas (1-2),
- * sopas/cremas (2-3), guisos, tortillas y platos reconfortantes/empanadas para el fin de semana.
+ * combinando legumbres, pescados, carnes, pastas, sopas/cremas, guisos y platos reconfortantes
+ * adaptándose a los criterios y presets seleccionados.
  */
-export function generateBalancedWeeklyMenu(allRecipes: Recipe[]): Record<string, Recipe> {
+export function generateBalancedWeeklyMenu(
+  allRecipes: Recipe[],
+  criteria?: WeeklyMenuCriteria
+): Record<string, Recipe> {
   const result: Record<string, Recipe> = {};
   if (allRecipes.length === 0) return result;
 
+  const preset = criteria?.preset || 'balanced';
+  const legumeDays = criteria?.legumeDays ?? (preset === 'light' ? 1 : 2);
+  const fishDays = criteria?.fishDays ?? (preset === 'light' ? 3 : 2);
+  const allowCheatWeekend = criteria?.allowCheatMealWeekend ?? (preset !== 'light');
+  const lightDinners = criteria?.lightDinnersOnly ?? (preset === 'light');
+  const maxPrepTime = criteria?.maxPrepTimeMinutes ?? (preset === 'express' ? 25 : undefined);
+
+  // Filtrado según tiempo de preparación si aplica
+  let candidateRecipes = allRecipes;
+  if (maxPrepTime) {
+    const fastOnly = allRecipes.filter((r) => r.prep_time <= maxPrepTime);
+    if (fastOnly.length >= 10) {
+      candidateRecipes = fastOnly;
+    }
+  }
+
   // Clasificar recetas por categoría
-  const legumes = allRecipes.filter((r) => r.type === 'legumbre');
-  const pastas = allRecipes.filter((r) => r.type === 'pasta');
-  const fish = allRecipes.filter((r) => r.type === 'pescado');
-  const meats = allRecipes.filter((r) => r.type === 'carne');
-  const soups = allRecipes.filter((r) => r.type === 'sopa');
-  const stews = allRecipes.filter((r) => r.type === 'guiso');
-  const eggs = allRecipes.filter((r) => r.type === 'huevos');
-  const fastFoods = allRecipes.filter((r) => r.type === 'fast_food');
-  const empanadas = allRecipes.filter((r) => r.type === 'empanada');
+  const legumes = candidateRecipes.filter((r) => r.type === 'legumbre');
+  const pastas = candidateRecipes.filter((r) => r.type === 'pasta');
+  const fish = candidateRecipes.filter((r) => r.type === 'pescado');
+  const meats = candidateRecipes.filter((r) => r.type === 'carne');
+  const soups = candidateRecipes.filter((r) => r.type === 'sopa');
+  const stews = candidateRecipes.filter((r) => r.type === 'guiso');
+  const eggs = candidateRecipes.filter((r) => r.type === 'huevos');
+  const fastFoods = candidateRecipes.filter((r) => r.type === 'fast_food');
+  const empanadas = candidateRecipes.filter((r) => r.type === 'empanada');
+  const salads = candidateRecipes.filter((r) => r.type === 'ensalada' || r.type === 'verdura');
 
   const usedMealIds = new Set<string>();
 
-  const pickUnused = (pool: Recipe[], fallbackPool: Recipe[] = allRecipes): Recipe => {
-    const available = pool.filter((r) => !usedMealIds.has(r.id));
+  const pickUnused = (pool: Recipe[], fallbackPool: Recipe[] = candidateRecipes): Recipe => {
+    let primary = pool;
+    if (preset === 'batch_cooking') {
+      const batchCandidates = pool.filter((r) => r.batch_cooking && !usedMealIds.has(r.id));
+      if (batchCandidates.length > 0) {
+        primary = batchCandidates;
+      }
+    }
+
+    const available = primary.filter((r) => !usedMealIds.has(r.id));
     if (available.length > 0) {
       const selected = available[Math.floor(Math.random() * available.length)];
       usedMealIds.add(selected.id);
@@ -87,50 +126,66 @@ export function generateBalancedWeeklyMenu(allRecipes: Recipe[]): Record<string,
       usedMealIds.add(selected.id);
       return selected;
     }
-    return pool[0] || allRecipes[0];
+    return pool[0] || candidateRecipes[0] || allRecipes[0];
+  };
+
+  const pickDinner = (healthyPool: Recipe[], cheatPool: Recipe[] = fastFoods): Recipe => {
+    if (lightDinners) {
+      const lightPool = soups.concat(salads, fish, eggs);
+      return pickUnused(lightPool.length > 0 ? lightPool : healthyPool);
+    }
+    return allowCheatWeekend ? pickUnused(cheatPool, healthyPool) : pickUnused(healthyPool);
   };
 
   // 1. LUNES
   // Almuerzo: Legumbre suave de inicio de semana
-  result['lunes_almuerzo'] = pickUnused(legumes);
-  // Cena: Pescado ligero a la plancha
-  result['lunes_cena'] = pickUnused(fish);
+  result['lunes_almuerzo'] = pickUnused(legumes.length > 0 ? legumes : meats);
+  // Cena: Pescado ligero a la plancha o sopa
+  result['lunes_cena'] = pickUnused(fish.length > 0 ? fish : soups);
 
   // 2. MARTES
   // Almuerzo: Carne blanca / pollo o pavo con guarnición
-  result['martes_almuerzo'] = pickUnused(meats);
+  result['martes_almuerzo'] = pickUnused(meats.length > 0 ? meats : fish);
   // Cena: Sopa reconfortante o crema casera
-  result['martes_cena'] = pickUnused(soups);
+  result['martes_cena'] = pickUnused(soups.length > 0 ? soups : eggs);
 
   // 3. MIÉRCOLES
-  // Almuerzo: Pasta nutritiva
-  result['miercoles_almuerzo'] = pickUnused(pastas);
-  // Cena: Huevos camperos / revuelto o tortilla
+  // Almuerzo: Pasta nutritiva o plato preferido
+  result['miercoles_almuerzo'] = pickUnused(pastas.length > 0 ? pastas : meats);
+  // Cena: Huevos camperos / revuelto o pescado
   result['miercoles_cena'] = pickUnused(eggs.concat(fish));
 
   // 4. JUEVES
-  // Almuerzo: Segunda legumbre semanal (ej. garbanzos con bacalao o alubias con verduras)
-  result['jueves_almuerzo'] = pickUnused(legumes);
+  // Almuerzo: Segunda legumbre semanal si está configurado (o guiso de carne/pescado)
+  if (legumeDays >= 2 && legumes.length > 0) {
+    result['jueves_almuerzo'] = pickUnused(legumes);
+  } else {
+    result['jueves_almuerzo'] = pickUnused(stews.concat(meats));
+  }
   // Cena: Pescado al horno o plancha
-  result['jueves_cena'] = pickUnused(fish);
+  result['jueves_cena'] = pickUnused(fish.length > 0 ? fish : soups);
 
   // 5. VIERNES
   // Almuerzo: Guiso tradicional casero o estofado
   result['viernes_almuerzo'] = pickUnused(stews.concat(meats));
-  // Cena: Inicio del fin de semana (Hamburguesa casera, pizza o croquetas)
-  result['viernes_cena'] = pickUnused(fastFoods);
+  // Cena: Inicio del fin de semana (Hamburguesa/pizza si está habilitado o cena ligera/pescado)
+  result['viernes_cena'] = pickDinner(fish.concat(eggs), fastFoods);
 
   // 6. SÁBADO
-  // Almuerzo: Empanada gallega o plato tradicional
-  result['sabado_almuerzo'] = pickUnused(empanadas.concat(pastas));
-  // Cena: Pizza napolitana casera o smash burger
-  result['sabado_cena'] = pickUnused(fastFoods);
+  // Almuerzo: Empanada gallega, plato tradicional o pasta
+  result['sabado_almuerzo'] = pickUnused(empanadas.concat(pastas, meats));
+  // Cena: Pizza napolitana casera / smash burger o cena saludable
+  result['sabado_cena'] = pickDinner(soups.concat(eggs, fish), fastFoods);
 
   // 7. DOMINGO
   // Almuerzo: Asado familiar de carne o pescado al horno
-  result['domingo_almuerzo'] = pickUnused(meats.concat(fish));
+  if (fishDays >= 3 && fish.length > 0) {
+    result['domingo_almuerzo'] = pickUnused(fish);
+  } else {
+    result['domingo_almuerzo'] = pickUnused(meats.concat(fish));
+  }
   // Cena: Sopa digestiva o cena ligera para empezar la semana descansados
-  result['domingo_cena'] = pickUnused(soups.concat(eggs));
+  result['domingo_cena'] = pickUnused(soups.concat(eggs, salads));
 
   return result;
 }

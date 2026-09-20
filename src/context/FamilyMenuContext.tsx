@@ -4,6 +4,7 @@ import { INITIAL_MEMBERS } from '../data/initialMembers';
 import { INITIAL_RECIPES } from '../data/initialRecipes';
 import { DAILY_FRESH_SIDES, QUICK_SNACKS } from '../data/initialSaladsAndSnacks';
 import { generateBalancedWeeklyMenu, generateWeeklySalads, generateWeeklySnacks, getMealSaladSide, DAYS_OF_WEEK } from '../services/menuAlgorithm';
+import type { WeeklyMenuCriteria } from '../services/menuAlgorithm';
 import { calculateMemberNutritionalTargets, getActiveFamilyTargets } from '../services/nutritionCalculator';
 import { generateMenuWithGemini } from '../services/geminiService';
 import type { GenerateWithAIOptions, DayMenuProposal } from '../services/geminiService';
@@ -30,7 +31,7 @@ interface FamilyMenuContextType {
   updateMember: (member: FamilyMember) => void;
   deleteMember: (id: string) => void;
   toggleMemberActive: (id: string) => void;
-  generateWeek: () => void;
+  generateWeek: (criteria?: WeeklyMenuCriteria) => void;
   generateWeekWithAI: (options: GenerateWithAIOptions) => Promise<{ success: boolean; message: string }>;
   swapMeal: (day: DayOfWeek, mealType: MealType, newRecipe: Recipe) => void;
   swapSalad: (day: DayOfWeek, mealType: MealType, newSalad: FreshSaladSide) => void;
@@ -467,8 +468,8 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
-  const generateWeek = () => {
-    const newMenu = generateBalancedWeeklyMenu(recipes);
+  const generateWeek = (criteria?: WeeklyMenuCriteria) => {
+    const newMenu = generateBalancedWeeklyMenu(recipes, criteria);
     const newSalads = generateWeeklySalads();
     const newSnacks = generateWeeklySnacks();
     setWeeklyMeals(newMenu);
