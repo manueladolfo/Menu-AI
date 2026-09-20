@@ -120,6 +120,7 @@ export interface FamilyMember {
   dietType: DietType;
   dietNotes: string;
   activeStatus: boolean; // toggle estacional: ej. hijo fuera o en casa
+  isAdmin?: boolean; // Permiso para acceder a la configuracion sensible (servicios externos)
   targetCalories: number;
   targetProteinG: number;
   targetCarbsG: number;

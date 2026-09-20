@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FamilyMember } from '../../types';
-import { Power, Edit2, Trash2, Heart, Activity } from 'lucide-react';
+import { Power, Edit2, Trash2, Heart, Activity, ShieldCheck } from 'lucide-react';
 
 interface MemberCardProps {
   member: FamilyMember;
@@ -44,6 +44,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
               {member.isOnDiet && (
                 <span className="text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-[#fdf8ed] text-[#78541c] border border-[#f5e5be]">
                   En Dieta
+                </span>
+              )}
+              {member.isAdmin && (
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-indigo-600" />
+                  Admin
                 </span>
               )}
             </div>

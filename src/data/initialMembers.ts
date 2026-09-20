@@ -18,6 +18,7 @@ export const INITIAL_MEMBERS: FamilyMember[] = [
     dietType: 'deficit_calorico',
     dietNotes: 'Déficit calórico suave: reducir hidratos simples a la mitad y doblar ensalada o verdura al vapor.',
     activeStatus: true,
+    isAdmin: true,
     targetCalories: fatherTargets.calories,
     targetProteinG: fatherTargets.proteinG,
     targetCarbsG: fatherTargets.carbsG,

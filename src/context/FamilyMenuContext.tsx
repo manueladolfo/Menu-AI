@@ -8,6 +8,7 @@ import { calculateMemberNutritionalTargets, getActiveFamilyTargets } from '../se
 import { generateMenuWithGemini } from '../services/geminiService';
 import type { GenerateWithAIOptions, DayMenuProposal } from '../services/geminiService';
 import { getSupabaseClient } from '../services/supabaseClient';
+import { clearStoredAdminPin } from '../services/adminAuth';
 
 export type CloudSyncStatus = 'synced' | 'syncing' | 'offline' | 'local';
 
@@ -448,7 +449,16 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const deleteMember = (id: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
+    const memberToDelete = members.find((m) => m.id === id);
+    const nextMembers = members.filter((m) => m.id !== id);
+    setMembers(nextMembers);
+
+    if (memberToDelete?.isAdmin) {
+      const remainingAdmins = nextMembers.filter((m) => m.isAdmin);
+      if (remainingAdmins.length === 0) {
+        clearStoredAdminPin();
+      }
+    }
   };
 
   const toggleMemberActive = (id: string) => {

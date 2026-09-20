@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { ActivityLevel, DietType, FamilyMember, Gender } from '../../types';
 import { calculateMemberNutritionalTargets } from '../../services/nutritionCalculator';
-import { X, Sparkles, Heart } from 'lucide-react';
+import { X, Sparkles, Heart, ShieldCheck } from 'lucide-react';
+import { getStoredAdminPin, saveStoredAdminPin } from '../../services/adminAuth';
 
 interface MemberModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [dietType, setDietType] = useState<DietType>('mantenimiento');
   const [dietNotes, setDietNotes] = useState('');
   const [activeStatus, setActiveStatus] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
 
   useEffect(() => {
     if (initialMember) {
@@ -35,6 +38,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setDietType(initialMember.dietType);
       setDietNotes(initialMember.dietNotes);
       setActiveStatus(initialMember.activeStatus);
+      setIsAdmin(!!initialMember.isAdmin);
+      setAdminPin(getStoredAdminPin() || '');
     } else {
       setName('');
       setAge(35);
@@ -44,6 +49,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setDietType('mantenimiento');
       setDietNotes('');
       setActiveStatus(true);
+      setIsAdmin(false);
+      setAdminPin('');
     }
   }, [initialMember, isOpen]);
 
@@ -72,7 +79,11 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       dietType: isOnDiet ? dietType : 'mantenimiento',
       dietNotes: isOnDiet ? dietNotes : '',
       activeStatus,
+      isAdmin,
     });
+    if (isAdmin && adminPin.trim().length === 4) {
+      saveStoredAdminPin(adminPin.trim());
+    }
     onClose();
   };
 
@@ -226,6 +237,49 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-amber-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Administrador Toggle & PIN */}
+          <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-indigo-950 block">
+                    Usuario Administrador
+                  </span>
+                  <span className="text-[11px] text-indigo-800/80">
+                    Permiso exclusivo para acceder a Conexión & Servicios Externos
+                  </span>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+            </div>
+            {isAdmin && (
+              <div className="pt-2 border-t border-indigo-200/60 flex items-center justify-between gap-3 text-xs">
+                <span className="text-[11px] text-indigo-900 font-medium">
+                  Clave / PIN de 4 cifras:
+                </span>
+                <input
+                  type="password"
+                  maxLength={4}
+                  placeholder="4 cifras"
+                  value={adminPin}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setAdminPin(val);
+                  }}
+                  className="w-28 px-3 py-1.5 rounded-xl border border-indigo-300 bg-white text-xs text-center font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
               </div>
             )}
           </div>
