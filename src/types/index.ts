@@ -33,7 +33,8 @@ export type RecipeType =
   | 'sopa'
   | 'fast_food'
   | 'empanada'
-  | 'salsa';
+  | 'salsa'
+  | 'embutido';
 
 export type OmittableSlot = 'almuerzo' | 'cena' | 'ensalada' | 'snack';
 

@@ -10,6 +10,7 @@ import { FAST_FOOD_RECIPES } from './recipes/fastFood';
 import { EMPANADA_RECIPES } from './recipes/empanadas';
 import { VEGETABLE_RECIPES } from './recipes/vegetables';
 import { SAUCE_RECIPES } from './recipes/sauces';
+import { EMBUTIDO_RECIPES } from './recipes/charcuterie';
 
 export const INITIAL_RECIPES: Recipe[] = [
   ...LEGUME_RECIPES,
@@ -23,6 +24,7 @@ export const INITIAL_RECIPES: Recipe[] = [
   ...EMPANADA_RECIPES,
   ...VEGETABLE_RECIPES,
   ...SAUCE_RECIPES,
+  ...EMBUTIDO_RECIPES,
 ];
 
 export {
@@ -37,4 +39,5 @@ export {
   EMPANADA_RECIPES,
   VEGETABLE_RECIPES,
   SAUCE_RECIPES,
+  EMBUTIDO_RECIPES,
 };

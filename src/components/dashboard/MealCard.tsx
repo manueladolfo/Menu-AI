@@ -24,6 +24,7 @@ const TYPE_COLORS: Record<string, string> = {
   fast_food: 'bg-orange-50 text-orange-900 border-orange-200',
   empanada: 'bg-amber-50 text-amber-900 border-amber-200',
   salsa: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
+  embutido: 'bg-red-50 text-red-900 border-red-200 font-semibold',
 };
 
 export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpenSwap }) => {
@@ -248,29 +249,6 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                     </button>
                   </div>
                 </div>
-
-                {/* Ingredientes de la ensalada */}
-                {saladSide.ingredients && saladSide.ingredients.length > 0 && (
-                  <div className="pt-2 border-t border-[#d4e6d4]/70">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[#2e5632] mb-1">
-                      <span>Ingredientes ({activeMembersCount} pers.):</span>
-                      <span className="text-[10px] font-normal text-stone-400">Mercadona / Aldi</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {saladSide.ingredients.map((ing, idx) => {
-                        const scaledQty = (ing.quantity || 1) * activeMembersCount;
-                        return (
-                          <span
-                            key={idx}
-                            className="text-[10px] bg-white/90 border border-[#c3dcc3] text-[#28492c] px-2 py-0.5 rounded-lg font-medium"
-                          >
-                            {ing.name} ({scaledQty} {ing.unit})
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             ) : null
           )}

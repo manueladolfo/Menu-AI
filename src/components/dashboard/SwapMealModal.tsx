@@ -42,7 +42,8 @@ type FilterChip =
   | 'guiso'
   | 'huevos'
   | 'verdura'
-  | 'salsa';
+  | 'salsa'
+  | 'embutido';
 
 export const SwapMealModal: React.FC<SwapMealModalProps> = ({
   isOpen,
@@ -535,6 +536,16 @@ export const SwapMealModal: React.FC<SwapMealModalProps> = ({
               }`}
             >
               🍳 Huevos
+            </button>
+            <button
+              onClick={() => setActiveFilter('embutido')}
+              className={`px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                activeFilter === 'embutido'
+                  ? 'bg-red-800 text-white'
+                  : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              🥩 Embutidos
             </button>
           </div>
         </div>

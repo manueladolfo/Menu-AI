@@ -156,6 +156,8 @@ export function getSwapAlternatives(
     );
   } else if (currentRecipe.type === 'salsa') {
     primaryPool = candidates.filter((r: Recipe) => r.type === 'salsa');
+  } else if (currentRecipe.type === 'embutido') {
+    primaryPool = candidates.filter((r: Recipe) => r.type === 'embutido' || r.type === 'carne');
   } else if (mealType === 'cena') {
     primaryPool = candidates.filter((r: Recipe) =>
       ['sopa', 'pescado', 'huevos', 'verdura', 'ensalada'].includes(r.type)
