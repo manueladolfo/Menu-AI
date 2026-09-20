@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DayOfWeek, MealType, Recipe } from '../../types';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSaladModal } from './SwapSaladModal';
-import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, EyeOff, Plus, ChefHat } from 'lucide-react';
+import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, Leaf, ExternalLink, Play, EyeOff, Plus, ChefHat, Heart } from 'lucide-react';
 
 interface MealCardProps {
   day: DayOfWeek;
@@ -326,12 +326,12 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
           {/* Diet Adaptations */}
           {activeDietMembers.length > 0 && recipe.diet_adaptation && (
-            <div className="mt-3 p-3 rounded-2xl bg-[#fdf8ed] border border-[#f5e5be] text-xs text-[#78541c]">
-              <div className="flex items-center gap-1.5 font-bold text-[#78541c] mb-1">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+            <div className="mt-3 p-3 rounded-2xl bg-[#edf7f5] border border-[#c2e7de] text-xs text-[#13574a]">
+              <div className="flex items-center gap-1.5 font-bold text-[#13574a] mb-1">
+                <Heart className="w-3.5 h-3.5 text-teal-600 fill-teal-100" />
                 <span>Adaptación para dieta ({activeDietMembers.map((m) => m.name).join(', ')}):</span>
               </div>
-              <p className="text-[11px] leading-relaxed font-medium">
+              <p className="text-[11px] leading-relaxed font-medium opacity-95">
                 {recipe.diet_adaptation}
               </p>
             </div>

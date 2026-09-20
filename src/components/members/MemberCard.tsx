@@ -42,7 +42,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
                 {member.age} años
               </span>
               {member.isOnDiet && (
-                <span className="text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-[#fdf8ed] text-[#78541c] border border-[#f5e5be]">
+                <span className="text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-[#edf7f5] text-[#13574a] border border-[#c2e7de]">
                   En Dieta
                 </span>
               )}
@@ -100,12 +100,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
       {/* Diet note detail if active */}
       {member.isOnDiet && member.dietNotes && (
-        <div className="mt-3 p-2.5 rounded-2xl bg-[#fdf8ed] border border-[#f5e5be] text-xs text-[#78541c]">
+        <div className="mt-3 p-2.5 rounded-2xl bg-[#edf7f5] border border-[#c2e7de] text-xs text-[#13574a]">
           <span className="font-bold flex items-center gap-1 mb-0.5">
-            <Heart className="w-3 h-3 text-amber-600" />
+            <Heart className="w-3 h-3 text-teal-600 fill-teal-100" />
             Objetivo: {member.dietType.replace('_', ' ')}
           </span>
-          <p className="text-[11px] leading-relaxed opacity-90">{member.dietNotes}</p>
+          <p className="text-[11px] leading-relaxed opacity-95">{member.dietNotes}</p>
         </div>
       )}
 
