@@ -2,8 +2,8 @@
 
 @layer base {
   body {
-    background-color: #faf7f2;
-    color: #332822;
+    background-color: #f1f5f9;
+    color: #0f172a;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }

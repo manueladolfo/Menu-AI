@@ -55,7 +55,7 @@ const MainContent: React.FC = () => {
   const pendingGroceryCount = groceryItems.filter((i) => !i.checked).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
       {/* Top Navbar */}
       <Navbar
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -86,8 +86,8 @@ const MainContent: React.FC = () => {
                   onClick={() => setCurrentTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
                     isActive
-                      ? 'bg-[#d97757] text-white shadow-xs'
-                      : 'bg-white/95 text-stone-600 hover:bg-amber-50/70 border border-amber-950/10'
+                      ? 'bg-[#E76F51] text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-2xs'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -95,7 +95,7 @@ const MainContent: React.FC = () => {
                   {tab.count !== undefined && tab.count > 0 && (
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                        isActive ? 'bg-white text-[#8a4b27]' : 'bg-rose-400 text-white'
+                        isActive ? 'bg-white text-[#E76F51]' : 'bg-[#E76F51] text-white'
                       }`}
                     >
                       {tab.count}
@@ -108,7 +108,7 @@ const MainContent: React.FC = () => {
 
           <button
             onClick={() => setIsGeneratorOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-bold text-[#c26546] hover:text-[#b05335] bg-[#fbf3ef] hover:bg-[#f6e6de] px-3.5 py-2 rounded-2xl border border-[#f2ded5] transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold text-[#E76F51] hover:text-[#D65F41] bg-white hover:bg-rose-50/50 px-3.5 py-2 rounded-2xl border border-rose-200 shadow-2xs transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Nuevas Ideas de Menú</span>

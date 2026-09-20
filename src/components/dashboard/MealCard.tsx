@@ -12,18 +12,18 @@ interface MealCardProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  legumbre: 'bg-[#fbf4eb] text-[#8a4b27] border-[#ecd8c7]',
-  pescado: 'bg-[#edf5f8] text-[#2c667a] border-[#d2e5ed]',
-  carne: 'bg-[#fbf0ef] text-[#934440] border-[#edd1ce]',
-  pasta: 'bg-[#fdf6ea] text-[#94611d] border-[#f5e1be]',
-  ensalada: 'bg-[#edf5ed] text-[#3b6e3f] border-[#d2e6d3]',
-  verdura: 'bg-[#f4f7ea] text-[#556e29] border-[#dfe8c5]',
-  huevos: 'bg-[#fdf9e8] text-[#876a17] border-[#f5ebba]',
-  guiso: 'bg-[#f7f0f8] text-[#6e3975] border-[#ebd3ec]',
-  sopa: 'bg-[#eef7f6] text-[#2d6f6a] border-[#cbe8e5]',
-  fast_food: 'bg-[#fef2eb] text-[#9a4b29] border-[#fcd5bf]',
-  empanada: 'bg-[#fef6e7] text-[#8c591c] border-[#f8e0b9]',
-  salsa: 'bg-[#fef3eb] text-[#a2512a] border-[#fcd5c0]',
+  legumbre: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+  pescado: 'bg-cyan-50 text-cyan-900 border-cyan-200',
+  carne: 'bg-rose-50 text-rose-900 border-rose-200',
+  pasta: 'bg-amber-50 text-amber-900 border-amber-200',
+  ensalada: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+  verdura: 'bg-lime-50 text-lime-900 border-lime-200',
+  huevos: 'bg-amber-50 text-amber-900 border-amber-200',
+  guiso: 'bg-purple-50 text-purple-900 border-purple-200',
+  sopa: 'bg-teal-50 text-teal-900 border-teal-200',
+  fast_food: 'bg-orange-50 text-orange-900 border-orange-200',
+  empanada: 'bg-amber-50 text-amber-900 border-amber-200',
+  salsa: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
 };
 
 export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpenSwap }) => {
@@ -95,24 +95,31 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
   return (
     <>
-      <div className="bg-white/95 rounded-3xl p-4 sm:p-5 border border-amber-950/10 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-emerald-500/60 hover:border-emerald-500 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
         {/* Header: Meal type & Action buttons */}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
               <span
-                className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full ${
                   mealType === 'almuerzo'
-                    ? 'bg-amber-100/70 text-amber-900 border border-amber-200/60'
-                    : 'bg-orange-100/70 text-orange-950 border border-orange-200/60'
+                    ? 'bg-slate-100 text-slate-800 border border-slate-200'
+                    : 'bg-slate-100 text-slate-800 border border-slate-200'
                 }`}
               >
                 {mealType === 'almuerzo' ? '☀️ Almuerzo' : '🌙 Cena'}
               </span>
 
+              {/* Distintivo Ensalada Fresca en Almuerzo */}
+              {mealType === 'almuerzo' && !isSaladOmitted && (
+                <span className="hidden xs:inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#10B981] text-white uppercase tracking-wider shadow-2xs">
+                  🥗 Ensalada Fresca
+                </span>
+              )}
+
               {/* Batch cooking indicator badge */}
               {recipe.batch_cooking && (
-                <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200/60">
+                <span className="hidden sm:flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200/60">
                   <Flame className="w-3 h-3 text-purple-600" />
                   Batch Cooking
                 </span>
@@ -120,7 +127,7 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
               {/* Weekend fast food / comfort badge */}
               {(recipe.type === 'fast_food' || recipe.type === 'empanada') && (
-                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200/60">
+                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-800 border border-orange-200/60">
                   🍔 Fin de Semana
                 </span>
               )}
@@ -130,20 +137,20 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => toggleOmitSlot(day, mealType)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-stone-500 hover:text-stone-800 bg-stone-100 hover:bg-stone-200/70 transition-all border border-stone-200/80 shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#D65F41] active:scale-95 transition-all shadow-xs cursor-pointer"
                 title={`Omitir ${mealType} de hoy (ej. por comida tardía o copiosa)`}
               >
-                <EyeOff className="w-3.5 h-3.5 text-stone-400" />
-                <span className="hidden sm:inline">Omitir</span>
+                <EyeOff className="w-3.5 h-3.5 text-white/90" />
+                <span>Omitir</span>
               </button>
 
               <button
                 onClick={() => onOpenSwap(recipe, mealType)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#c26546] bg-[#fbf3ef] hover:bg-[#f6e6de] active:scale-95 transition-all border border-[#f2ded5] shadow-2xs"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 active:scale-95 transition-all border border-slate-200/80 shadow-2xs"
                 title="Intercambiar plato por otra alternativa equivalente o buscar en catálogo"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Cambiar</span>
+                <span className="hidden sm:inline">Cambiar</span>
               </button>
             </div>
           </div>

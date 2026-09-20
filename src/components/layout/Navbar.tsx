@@ -12,25 +12,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSettings, onOpenGenerator 
   const totalMembers = members.length;
 
   return (
-    <header className="sticky top-0 z-30 bg-[#faf7f2]/95 backdrop-blur-md border-b border-amber-950/10 transition-all shadow-2xs">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all shadow-2xs">
       <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-        {/* Logo & Brand: en escritorio mantiene "Cocina Fácil", en móvil se oculta para no agolpar */}
+        {/* Logo & Brand */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex items-center justify-center text-white shadow-sm shadow-orange-500/20">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#10B981] to-[#0D9488] flex items-center justify-center text-white shadow-sm shadow-emerald-500/20">
             <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-stone-900 tracking-tight text-base sm:text-lg block leading-tight">
-                FamilyMenu
+              <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg block leading-tight">
+                Menu-AI
               </span>
-              {/* "Cocina Fácil": visible en escritorio, oculto en móvil */}
-              <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-orange-100/80 text-amber-900">
-                Cocina Fácil
+              <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                Plan Familiar
               </span>
             </div>
-            <p className="text-xs text-stone-500 hidden sm:block">
-              Ideas sencillas y tranquilas para toda la familia
+            <p className="text-xs text-slate-500 hidden sm:block">
+              Planificación equilibrada para toda la familia
             </p>
           </div>
         </div>
@@ -81,22 +80,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSettings, onOpenGenerator 
           {/* Quick AI Generate button */}
           <button
             onClick={onOpenGenerator}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-orange-400 via-amber-500 to-rose-400 hover:opacity-95 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-xs shrink-0"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-[#E76F51] hover:bg-[#D65F41] text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-xs shrink-0"
             title="Generar menú semanal con IA"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-100 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
             <span className="hidden sm:inline">Ideas de Menú</span>
           </button>
 
           {/* Settings Modal Button */}
           <button
             onClick={onOpenSettings}
-            className="relative p-1.5 sm:p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-200/50 rounded-xl transition-colors shrink-0"
+            className="relative p-1.5 sm:p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
             title="Configuración Supabase / IA"
           >
             <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             {isSupabaseConfigured && (
-              <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#faf7f2]" />
+              <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
             )}
           </button>
         </div>

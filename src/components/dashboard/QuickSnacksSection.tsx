@@ -24,23 +24,23 @@ export const QuickSnacksSection: React.FC = () => {
 
   return (
     <>
-      <div className="bg-white/95 rounded-3xl p-4 sm:p-5 border border-amber-950/10 shadow-sm space-y-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-amber-400/80 shadow-xs space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-950/5 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-100 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-amber-100/80 text-amber-900 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100/90 text-amber-900 flex items-center justify-center font-bold">
               <SmilePlus className="w-5 h-5 text-amber-800" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-stone-900 text-base">
+                <h3 className="font-extrabold text-slate-900 text-base">
                   Snack Saciante del Día ({activeDay})
                 </h3>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#E9C46A] text-amber-950">
                   {currentDailySnack.prepTime}
                 </span>
               </div>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-slate-500">
                 Sugerencia ligera sin cocinar para matar el hambre entre horas
               </p>
             </div>
@@ -153,19 +153,19 @@ export const QuickSnacksSection: React.FC = () => {
             <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-amber-100">
               <button
                 onClick={() => toggleOmitSlot(activeDay, 'snack')}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-500 hover:text-stone-800 bg-stone-100 hover:bg-stone-200/70 transition-all border border-stone-200/80 shadow-2xs"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#D65F41] active:scale-95 transition-all shadow-xs cursor-pointer"
                 title="Omitir snack de hoy"
               >
-                <EyeOff className="w-3.5 h-3.5 text-stone-400" />
+                <EyeOff className="w-3.5 h-3.5 text-white/90" />
                 <span>Omitir</span>
               </button>
 
               <button
                 onClick={() => handleOpenSwapForDay(activeDay)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-100/90 hover:bg-amber-200 active:scale-95 transition-all border border-amber-200/80 shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 active:scale-95 transition-all border border-slate-200 shadow-2xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Cambiar Snack</span>
+                <span>Cambiar</span>
               </button>
             </div>
           </div>

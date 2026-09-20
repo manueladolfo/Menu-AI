@@ -30,18 +30,18 @@ export const DaySelector: React.FC<DaySelectorProps> = ({ selectedDay, onSelectD
             onClick={() => onSelectDay(day)}
             className={`flex-1 min-w-[52px] sm:min-w-[72px] py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center transition-all ${
               isSelected
-                ? 'bg-[#d97757] text-white shadow-sm shadow-[#d97757]/30 scale-102 font-bold'
-                : 'bg-white/90 text-stone-600 hover:bg-amber-50/70 border border-amber-950/10 font-semibold'
+                ? 'bg-[#E76F51] text-white shadow-md shadow-[#E76F51]/30 scale-102 font-bold'
+                : 'bg-[#CBD5E1]/70 text-slate-700 hover:bg-[#CBD5E1] border-none font-semibold'
             }`}
           >
             <span className="text-xs uppercase tracking-wider font-bold opacity-90">
-              {DAY_LABELS[day].short}
+              {DAY_LABELS[day].short}.
             </span>
             <span className="text-[10px] opacity-75 hidden sm:inline mt-0.5">
               {isSunday ? 'Domingo' : DAY_LABELS[day].full}
             </span>
             {isSunday && !isSelected && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E76F51] mt-1" />
             )}
           </button>
         );
