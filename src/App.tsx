@@ -132,8 +132,8 @@ const MainContent: React.FC = () => {
               <DaySelector selectedDay={activeDay} onSelectDay={setActiveDay} />
             </div>
 
-            {/* Meals for selected day: Almuerzo & Cena */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            {/* Meals for selected day: Almuerzo & Cena (independientes en altura) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 items-start">
               {lunchRecipe && (
                 <MealCard
                   day={activeDay}

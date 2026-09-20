@@ -61,7 +61,37 @@ function getIngredientEmoji(name: string, category?: string): string {
   }
 }
 
+const MEAL_THEMES = {
+  almuerzo: {
+    cardBg: 'bg-[#fcf9f5]',
+    cardBorder: 'border-2 border-[#e6d5c5] hover:border-[#dbc5b2]',
+    badge: 'bg-amber-100/90 text-amber-950 border border-amber-300/80',
+    ingredientsCard: 'bg-[#fcf9f5] border-2 border-[#e6d5c5]',
+    ingredientsDivider: 'border-[#ebdcd0]',
+    tag: 'bg-amber-100 text-amber-900 border border-amber-300/80',
+    tagText: 'PLATO PRINCIPAL ALMUERZO',
+    pill: 'bg-white text-amber-950 border border-[#e2d0c2]',
+    itemCard: 'bg-white/95 border border-[#ebdcd0] hover:border-[#dbc5b2]',
+    stepsIcon: 'text-[#c26546]',
+    stepsWebBtn: 'bg-white hover:bg-amber-50/60 text-stone-700 border border-[#e2d0c2]',
+  },
+  cena: {
+    cardBg: 'bg-[#f5f8fc]',
+    cardBorder: 'border-2 border-[#ccdcee] hover:border-[#b7cde6]',
+    badge: 'bg-indigo-100/90 text-indigo-950 border border-indigo-200',
+    ingredientsCard: 'bg-[#f5f8fc] border-2 border-[#ccdcee]',
+    ingredientsDivider: 'border-[#d7e4f3]',
+    tag: 'bg-indigo-100 text-indigo-900 border border-indigo-200',
+    tagText: 'PLATO PRINCIPAL CENA',
+    pill: 'bg-white text-indigo-950 border border-[#c5d7ec]',
+    itemCard: 'bg-white/95 border border-[#d7e4f3] hover:border-[#b7cde6]',
+    stepsIcon: 'text-indigo-600',
+    stepsWebBtn: 'bg-white hover:bg-indigo-50/60 text-stone-700 border border-[#c5d7ec]',
+  },
+};
+
 export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpenSwap }) => {
+  const theme = MEAL_THEMES[mealType];
   const [showIngredients, setShowIngredients] = useState(false);
   const [isSaladModalOpen, setIsSaladModalOpen] = useState(false);
   const { members, activeMembersCount, getSaladForMeal, isSlotOmitted, toggleOmitSlot } = useFamilyMenu();
@@ -130,17 +160,13 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
   return (
     <>
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-emerald-500/60 hover:border-emerald-500 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
+      <div className={`${theme.cardBg} ${theme.cardBorder} rounded-3xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden`}>
         {/* Header: Meal type & Action buttons */}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
               <span
-                className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                  mealType === 'almuerzo'
-                    ? 'bg-slate-100 text-slate-800 border border-slate-200'
-                    : 'bg-slate-100 text-slate-800 border border-slate-200'
-                }`}
+                className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full ${theme.badge}`}
               >
                 {mealType === 'almuerzo' ? '☀️ Almuerzo' : '🌙 Cena'}
               </span>
@@ -339,34 +365,34 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
           {/* Expandable ingredients & step-by-step list (Plato Principal y Ensalada) */}
           {showIngredients && (
             <div className="mt-3 pt-3 border-t border-dashed border-stone-200 space-y-4 animate-in fade-in duration-200">
-              {/* Sección 1: Plato Principal (Sincronía con tarjeta blanca y acento coral) */}
-              <div className="rounded-2xl p-3.5 sm:p-4 bg-white border border-slate-200/90 border-l-4 border-l-[#E76F51] shadow-2xs space-y-3">
+              {/* Sección 1: Plato Principal (Sincronizado con su tarjeta de comida) */}
+              <div className={`rounded-2xl p-3.5 sm:p-4 ${theme.ingredientsCard} shadow-2xs space-y-3`}>
                 {/* Cabecera del plato principal */}
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div className={`flex items-center justify-between gap-2 border-b ${theme.ingredientsDivider} pb-2.5`}>
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 flex items-center justify-center text-lg shrink-0 shadow-2xs">
-                      {recipe.emoji || '🍽️'}
+                    <span className={`w-8 h-8 rounded-xl ${theme.badge} flex items-center justify-center text-lg shrink-0 shadow-2xs`}>
+                      {recipe.emoji || (mealType === 'almuerzo' ? '☀️' : '🌙')}
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] uppercase font-extrabold text-[#E76F51] bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 tracking-wider">
-                          Plato Principal
+                        <span className={`text-[10px] uppercase font-extrabold ${theme.tag} px-2 py-0.5 rounded-md tracking-wider`}>
+                          {theme.tagText}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-stone-700 border border-stone-200/80">
                           {activeMembersCount} {activeMembersCount === 1 ? 'ración' : 'raciones'}
                         </span>
                       </div>
-                      <h5 className="font-bold text-xs sm:text-sm text-slate-900 truncate mt-0.5">
+                      <h5 className="font-bold text-xs sm:text-sm text-stone-900 truncate mt-0.5">
                         {recipe.title}
                       </h5>
                     </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium shrink-0 hidden xs:inline">
+                  <span className="text-[10px] text-stone-400 font-medium shrink-0 hidden xs:inline">
                     Mercadona / Aldi
                   </span>
                 </div>
 
-                {/* Lista de ingredientes en cápsulas visuales neutras y limpias */}
+                {/* Lista de ingredientes en cápsulas visuales */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {recipe.ingredients.map((ing, idx) => {
                     const scaledQty = (ing.quantity || 1) * activeMembersCount;
@@ -374,16 +400,16 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                     return (
                       <div
                         key={idx}
-                        className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-2xs"
+                        className={`flex items-center justify-between gap-2 p-2 rounded-xl ${theme.itemCard} transition-colors shadow-2xs`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-base select-none shrink-0">{emoji}</span>
-                          <span className="font-semibold text-xs text-slate-800 truncate" title={ing.name}>
+                          <span className="font-semibold text-xs text-stone-800 truncate" title={ing.name}>
                             {ing.name}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[11px] font-extrabold text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200/90 font-mono whitespace-nowrap shadow-2xs">
+                          <span className={`text-[11px] font-extrabold ${theme.pill} px-2 py-0.5 rounded-lg font-mono whitespace-nowrap shadow-2xs`}>
                             {scaledQty} {ing.unit}
                           </span>
                         </div>
@@ -393,9 +419,9 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                 </div>
 
                 {/* Elaboración paso a paso y vídeo */}
-                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-[11px] text-slate-600 font-bold flex items-center gap-1">
-                    <ChefHat className="w-3.5 h-3.5 text-[#E76F51]" />
+                <div className={`pt-2.5 border-t ${theme.ingredientsDivider} flex items-center justify-between gap-2 flex-wrap`}>
+                  <span className="text-[11px] text-stone-700 font-bold flex items-center gap-1">
+                    <ChefHat className={`w-3.5 h-3.5 ${theme.stepsIcon}`} />
                     <span>¿Cómo cocinar el plato?</span>
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -403,10 +429,10 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                       href={`https://www.google.com/search?q=${encodeURIComponent('receta paso a paso ' + recipe.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all border border-slate-200 shadow-2xs active:scale-95"
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${theme.stepsWebBtn} text-xs font-bold transition-all shadow-2xs active:scale-95`}
                       title="Ver elaboración detallada paso a paso en la web"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-[#E76F51]" />
+                      <ExternalLink className={`w-3.5 h-3.5 ${theme.stepsIcon}`} />
                       <span>Pasos Web</span>
                     </a>
                     <a
