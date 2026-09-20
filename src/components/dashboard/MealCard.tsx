@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DayOfWeek, MealType, Recipe } from '../../types';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSaladModal } from './SwapSaladModal';
-import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, Utensils, EyeOff, Plus } from 'lucide-react';
+import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, EyeOff, Plus, ChefHat } from 'lucide-react';
 
 interface MealCardProps {
   day: DayOfWeek;
@@ -26,6 +26,40 @@ const TYPE_COLORS: Record<string, string> = {
   salsa: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
   embutido: 'bg-red-50 text-red-900 border-red-200 font-semibold',
 };
+
+function getIngredientEmoji(name: string, category?: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('huevo')) return '🥚';
+  if (n.includes('queso') || n.includes('parmesano') || n.includes('feta') || n.includes('mozzarella') || n.includes('leche') || n.includes('yogur') || n.includes('nata')) return '🧀';
+  if (n.includes('pollo') || n.includes('pavo') || n.includes('alita') || n.includes('pechuga')) return '🍗';
+  if (n.includes('ternera') || n.includes('cerdo') || n.includes('lomo') || n.includes('jamón') || n.includes('chorizo') || n.includes('cecina') || n.includes('chistorra') || n.includes('sobrasada') || n.includes('carne') || n.includes('hamburguesa')) return '🥩';
+  if (n.includes('salmón') || n.includes('atún') || n.includes('bacalao') || n.includes('merluza') || n.includes('gamba') || n.includes('pescado') || n.includes('sepia') || n.includes('lubina') || n.includes('dorada') || n.includes('calamar') || n.includes('langostino')) return '🐟';
+  if (n.includes('tomate')) return '🍅';
+  if (n.includes('aguacate')) return '🥑';
+  if (n.includes('cebolla') || n.includes('cebolleta')) return '🧅';
+  if (n.includes('ajo')) return '🧄';
+  if (n.includes('zanahoria')) return '🥕';
+  if (n.includes('patata')) return '🥔';
+  if (n.includes('seta') || n.includes('champiñón')) return '🍄';
+  if (n.includes('limón')) return '🍋';
+  if (n.includes('manzana')) return '🍎';
+  if (n.includes('pimiento') || n.includes('calabacín') || n.includes('berenjena') || n.includes('espinaca') || n.includes('acelga') || n.includes('brócoli') || n.includes('lechuga') || n.includes('canónigo') || n.includes('rúcula') || n.includes('pepino')) return '🥦';
+  if (n.includes('arroz') || n.includes('pasta') || n.includes('espagueti') || n.includes('macarrón') || n.includes('fideo') || n.includes('pan') || n.includes('harina') || n.includes('masa')) return '🌾';
+  if (n.includes('lenteja') || n.includes('garbanzo') || n.includes('alubia')) return '🍲';
+  if (n.includes('aceite') || n.includes('aove') || n.includes('oliva') || n.includes('vinagre')) return '🫒';
+  if (n.includes('sal') || n.includes('pimienta') || n.includes('orégano') || n.includes('laurel') || n.includes('pimentón') || n.includes('comino') || n.includes('perejil') || n.includes('especia') || n.includes('tomillo')) return '🧂';
+  if (n.includes('nuez') || n.includes('almendra') || n.includes('cacahuete') || n.includes('semilla') || n.includes('piñón')) return '🥜';
+
+  switch (category) {
+    case 'carniceria_pescaderia': return '🥩';
+    case 'frescos_verdura': return '🥦';
+    case 'lacteos_huevos': return '🧀';
+    case 'despensa_legumbres': return '🌾';
+    case 'especias_aceites': return '🫒';
+    case 'congelados': return '❄️';
+    default: return '🛒';
+  }
+}
 
 export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpenSwap }) => {
   const [showIngredients, setShowIngredients] = useState(false);
@@ -304,52 +338,85 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
           {/* Expandable ingredients & step-by-step list (Plato Principal y Ensalada) */}
           {showIngredients && (
-            <div className="mt-3 pt-3 border-t border-dashed border-stone-200 space-y-4">
+            <div className="mt-3 pt-3 border-t border-dashed border-stone-200 space-y-4 animate-in fade-in duration-200">
               {/* Sección 1: Plato Principal */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
-                  <span className="flex items-center gap-1">
-                    <Utensils className="w-3.5 h-3.5 text-[#c26546]" />
-                    Plato Principal: {recipe.title} ({activeMembersCount} personas):
+              <div className="rounded-2xl p-3.5 bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-white border border-amber-200/90 shadow-2xs space-y-3">
+                {/* Cabecera del plato principal */}
+                <div className="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200/80 flex items-center justify-center text-lg shrink-0 shadow-2xs">
+                      {recipe.emoji || '🍽️'}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] uppercase font-extrabold text-[#c26546] tracking-wider">
+                          Plato Principal
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-amber-100 text-amber-900">
+                          {activeMembersCount} {activeMembersCount === 1 ? 'ración' : 'raciones'}
+                        </span>
+                      </div>
+                      <h5 className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+                        {recipe.title}
+                      </h5>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-stone-400 font-medium shrink-0 hidden xs:inline">
+                    Mercadona / Aldi
                   </span>
-                  <span className="text-[10px] text-stone-400 font-normal">Mercadona / Aldi</span>
                 </div>
-                <ul className="space-y-1.5 text-xs text-stone-600">
+
+                {/* Lista de ingredientes en cápsulas visuales */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {recipe.ingredients.map((ing, idx) => {
                     const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                    const emoji = getIngredientEmoji(ing.name, ing.category);
                     return (
-                      <li key={idx} className="flex items-baseline justify-between py-0.5 border-b border-stone-50">
-                        <span className="font-medium text-stone-700">{ing.name}</span>
-                        <span className="text-stone-500 text-[11px]">
-                          {scaledQty} {ing.unit} {ing.supermarket_ref ? `(${ing.supermarket_ref})` : ''}
-                        </span>
-                      </li>
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white/95 border border-amber-100 hover:border-amber-300 transition-colors shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base select-none shrink-0">{emoji}</span>
+                          <span className="font-semibold text-xs text-stone-800 truncate" title={ing.name}>
+                            {ing.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[11px] font-extrabold text-amber-950 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/70 font-mono whitespace-nowrap">
+                            {scaledQty} {ing.unit}
+                          </span>
+                        </div>
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
 
-                {/* Enlace directo al plato principal y elaboración paso a paso */}
-                <div className="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-[11px] text-stone-500 font-medium">¿Cómo prepararlo?</span>
+                {/* Elaboración paso a paso y vídeo */}
+                <div className="pt-2 border-t border-amber-100 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] text-stone-600 font-bold flex items-center gap-1">
+                    <ChefHat className="w-3.5 h-3.5 text-[#c26546]" />
+                    <span>¿Cómo cocinar el plato?</span>
+                  </span>
                   <div className="flex items-center gap-1.5">
                     <a
                       href={`https://www.google.com/search?q=${encodeURIComponent('receta paso a paso ' + recipe.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-semibold transition-colors border border-stone-200"
-                      title="Ver elaboración paso a paso en la web"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-700 text-xs font-bold transition-all border border-stone-200 shadow-2xs active:scale-95"
+                      title="Ver elaboración detallada paso a paso en la web"
                     >
-                      <ExternalLink className="w-3 h-3 text-stone-500" />
+                      <ExternalLink className="w-3.5 h-3.5 text-[#c26546]" />
                       <span>Pasos Web</span>
                     </a>
                     <a
                       href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ' + recipe.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
-                      title="Ver receta en vídeo en YouTube"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-2xs active:scale-95"
+                      title="Ver vídeo receta en YouTube"
                     >
-                      <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                      <Play className="w-3 h-3 fill-white text-white" />
                       <span>Vídeo</span>
                     </a>
                   </div>
@@ -358,50 +425,83 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
 
               {/* Sección 2: Ensalada Acompañamiento (solo si es almuerzo y no está omitida) */}
               {mealType === 'almuerzo' && !isSaladOmitted && saladSide && saladSide.ingredients && saladSide.ingredients.length > 0 && (
-                <div className="pt-3 border-t border-stone-100">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#2e5632] mb-2">
-                    <span className="flex items-center gap-1">
-                      <Leaf className="w-3.5 h-3.5 text-[#3a633d]" />
-                      Ensalada: {saladSide.name} ({activeMembersCount} personas):
+                <div className="rounded-2xl p-3.5 bg-gradient-to-br from-emerald-50/80 via-green-50/40 to-white border border-emerald-200/90 shadow-2xs space-y-3">
+                  {/* Cabecera de la ensalada */}
+                  <div className="flex items-center justify-between gap-2 border-b border-emerald-200/60 pb-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200/80 flex items-center justify-center text-lg shrink-0 shadow-2xs">
+                        {saladSide.emoji || '🥗'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] uppercase font-extrabold text-emerald-800 tracking-wider">
+                            Ensalada del Almuerzo
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-900">
+                            {activeMembersCount} {activeMembersCount === 1 ? 'ración' : 'raciones'}
+                          </span>
+                        </div>
+                        <h5 className="font-bold text-xs sm:text-sm text-stone-900 truncate">
+                          {saladSide.name}
+                        </h5>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-stone-400 font-medium shrink-0 hidden xs:inline">
+                      Mercadona / Aldi
                     </span>
-                    <span className="text-[10px] text-stone-400 font-normal">Mercadona / Aldi</span>
                   </div>
-                  <ul className="space-y-1.5 text-xs text-stone-600">
+
+                  {/* Lista de ingredientes de la ensalada en cápsulas visuales */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {saladSide.ingredients.map((ing, idx) => {
                       const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                      const emoji = getIngredientEmoji(ing.name, ing.category);
                       return (
-                        <li key={idx} className="flex items-baseline justify-between py-0.5 border-b border-emerald-50">
-                          <span className="font-medium text-stone-700">{ing.name}</span>
-                          <span className="text-stone-500 text-[11px]">
-                            {scaledQty} {ing.unit} {ing.supermarket_ref ? `(${ing.supermarket_ref})` : ''}
-                          </span>
-                        </li>
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white/95 border border-emerald-100/90 hover:border-emerald-300 transition-colors shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base select-none shrink-0">{emoji}</span>
+                            <span className="font-semibold text-xs text-stone-800 truncate" title={ing.name}>
+                              {ing.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[11px] font-extrabold text-emerald-950 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/70 font-mono whitespace-nowrap">
+                              {scaledQty} {ing.unit}
+                            </span>
+                          </div>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
 
-                  {/* Paso a paso ensalada */}
-                  <div className="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[11px] text-[#2e5632] font-medium">¿Cómo preparar la ensalada?</span>
+                  {/* Elaboración paso a paso de la ensalada */}
+                  <div className="pt-2 border-t border-emerald-100 flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[11px] text-emerald-900 font-bold flex items-center gap-1">
+                      <Leaf className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>¿Cómo preparar la ensalada?</span>
+                    </span>
                     <div className="flex items-center gap-1.5">
                       <a
                         href={`https://www.google.com/search?q=${encodeURIComponent('receta ensalada paso a paso ' + saladSide.name)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-semibold transition-colors border border-emerald-200"
-                        title="Ver preparación de ensalada en la web"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50/50 text-emerald-900 text-xs font-bold transition-all border border-emerald-200 shadow-2xs active:scale-95"
+                        title="Ver preparación de la ensalada en la web"
                       >
-                        <ExternalLink className="w-3 h-3 text-emerald-600" />
+                        <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
                         <span>Pasos Web</span>
                       </a>
                       <a
                         href={`https://www.youtube.com/results?search_query=${encodeURIComponent('receta ensalada ' + saladSide.name)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold transition-colors border border-red-200"
-                        title="Ver preparación en vídeo en YouTube"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-2xs active:scale-95"
+                        title="Ver vídeo receta de la ensalada en YouTube"
                       >
-                        <Play className="w-2.5 h-2.5 fill-red-600 text-red-600" />
+                        <Play className="w-3 h-3 fill-white text-white" />
                         <span>Vídeo</span>
                       </a>
                     </div>
