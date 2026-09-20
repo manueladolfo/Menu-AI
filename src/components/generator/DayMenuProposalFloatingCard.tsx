@@ -131,20 +131,6 @@ export const DayMenuProposalFloatingCard: React.FC<DayMenuProposalFloatingCardPr
     setTimeout(() => setSavedStatus((prev) => ({ ...prev, dinnerSaved: false })), 2000);
   };
 
-  // Asignar Acompañamiento Cena
-  const handleApplyDinnerSalad = () => {
-    swapSalad(targetDay, 'cena', proposal.dinnerSalad);
-    setSavedStatus((prev) => ({ ...prev, dinnerSaladApplied: true }));
-    showToast(`🥑 Guarnición asignada a la cena del ${targetDay.toUpperCase()}`);
-    setTimeout(() => setSavedStatus((prev) => ({ ...prev, dinnerSaladApplied: false })), 2000);
-  };
-
-  const handleSaveDinnerSalad = () => {
-    addSaladToCatalog(proposal.dinnerSalad);
-    setSavedStatus((prev) => ({ ...prev, dinnerSaladSaved: true }));
-    showToast(`🥑 Guarnición guardada en el catálogo`);
-    setTimeout(() => setSavedStatus((prev) => ({ ...prev, dinnerSaladSaved: false })), 2000);
-  };
 
   // Asignar Snack
   const handleApplySnack = () => {
@@ -503,46 +489,6 @@ export const DayMenuProposalFloatingCard: React.FC<DayMenuProposalFloatingCardPr
             </div>
           </div>
 
-          {/* 4. Acompañamiento de Cena */}
-          <div className="bg-[#fbf7f4] rounded-2xl border border-amber-200/70 p-3.5 shadow-2xs space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2.5">
-                <span className="text-xl p-1.5 rounded-xl bg-amber-100 text-amber-800">
-                  {proposal.dinnerSalad.emoji || '🥑'}
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded-full bg-amber-200/70 text-amber-900">
-                      Guarnición Digestiva
-                    </span>
-                  </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-stone-900 mt-0.5">
-                    {proposal.dinnerSalad.name}
-                  </h4>
-                  <p className="text-[11px] text-stone-600">
-                    {proposal.dinnerSalad.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-1 border-t border-amber-100">
-              <button
-                onClick={handleSaveDinnerSalad}
-                className="px-2.5 py-1 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 text-amber-900 text-xs font-semibold flex items-center gap-1"
-              >
-                <Bookmark className="w-3 h-3 text-amber-600" />
-                <span>{savedStatus.dinnerSaladSaved ? 'Guardada' : 'Al Catálogo'}</span>
-              </button>
-              <button
-                onClick={handleApplyDinnerSalad}
-                className="px-2.5 py-1 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-98"
-              >
-                <Salad className="w-3 h-3" />
-                <span>{savedStatus.dinnerSaladApplied ? 'Asignada' : 'Asignar a Cena'}</span>
-              </button>
-            </div>
-          </div>
 
           {/* 5. Snack Saciante */}
           <div className="bg-white rounded-2xl border border-amber-950/10 p-4 shadow-2xs space-y-2.5">

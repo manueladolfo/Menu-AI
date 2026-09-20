@@ -3,11 +3,14 @@ import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { Dumbbell, Wheat, Droplet, HeartHandshake } from 'lucide-react';
 
 export const MacroSummaryBar: React.FC = () => {
-  const { weeklyMeals, activeTargets, activeDay } = useFamilyMenu();
+  const { weeklyMeals, activeTargets, activeDay, isSlotOmitted } = useFamilyMenu();
 
-  // Calcular macros del día seleccionado
-  const lunch = weeklyMeals[`${activeDay}_almuerzo`];
-  const dinner = weeklyMeals[`${activeDay}_cena`];
+  const isLunchOmitted = isSlotOmitted(activeDay, 'almuerzo');
+  const isDinnerOmitted = isSlotOmitted(activeDay, 'cena');
+
+  // Calcular macros del día seleccionado (excluyendo comidas omitidas)
+  const lunch = isLunchOmitted ? null : weeklyMeals[`${activeDay}_almuerzo`];
+  const dinner = isDinnerOmitted ? null : weeklyMeals[`${activeDay}_cena`];
 
   const dayCalories = (lunch?.macros.calories || 0) + (dinner?.macros.calories || 0);
   const dayProtein = (lunch?.macros.protein || 0) + (dinner?.macros.protein || 0);
@@ -18,13 +21,21 @@ export const MacroSummaryBar: React.FC = () => {
   const weekCalories = totalMeals.reduce((sum, m) => sum + (m.macros?.calories || 0), 0);
 
   // Almuerzo + Cena aportan ~70-75% del total diario
-  const expectedMealShare = 0.75;
-  const targetMealCalories = Math.round(activeTargets.avgCalories * expectedMealShare);
-  const targetMealProtein = Math.round(activeTargets.avgProteinG * expectedMealShare);
-  const targetMealCarbs = Math.round(activeTargets.avgCarbsG * expectedMealShare);
-  const targetMealFat = Math.round(activeTargets.avgFatG * expectedMealShare);
+  const expectedMealShare = isLunchOmitted && isDinnerOmitted ? 0 : (isLunchOmitted || isDinnerOmitted ? 0.4 : 0.75);
+  const targetMealCalories = Math.round(activeTargets.avgCalories * (isLunchOmitted && isDinnerOmitted ? 0.75 : expectedMealShare));
+  const targetMealProtein = Math.round(activeTargets.avgProteinG * (isLunchOmitted && isDinnerOmitted ? 0.75 : expectedMealShare));
+  const targetMealCarbs = Math.round(activeTargets.avgCarbsG * (isLunchOmitted && isDinnerOmitted ? 0.75 : expectedMealShare));
+  const targetMealFat = Math.round(activeTargets.avgFatG * (isLunchOmitted && isDinnerOmitted ? 0.75 : expectedMealShare));
 
   const calPercentage = Math.min(100, Math.round((dayCalories / (targetMealCalories || 1)) * 100));
+
+  const mealsLabel = isLunchOmitted && isDinnerOmitted
+    ? `Día sin comidas fijadas (${activeDay.toUpperCase()})`
+    : isDinnerOmitted
+    ? `Solo Almuerzo (${activeDay.toUpperCase()}) • Cena omitida`
+    : isLunchOmitted
+    ? `Solo Cena (${activeDay.toUpperCase()}) • Almuerzo omitido`
+    : `Almuerzo + Cena (${activeDay.toUpperCase()})`;
 
   return (
     <div className="bg-gradient-to-br from-[#382d27] via-[#43352e] to-[#342823] text-[#fbf8f5] rounded-3xl p-4 sm:p-5 shadow-md border border-amber-900/30">
@@ -35,11 +46,11 @@ export const MacroSummaryBar: React.FC = () => {
               Tranquilidad & Nutrición
             </span>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#4e3f37] text-amber-200 font-medium">
-              Almuerzo + Cena ({activeDay.toUpperCase()})
+              {mealsLabel}
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-0.5">
-            {dayCalories} kcal <span className="text-xs font-normal text-amber-200/80">/ ~{targetMealCalories} kcal objetivo diario</span>
+            {dayCalories} kcal <span className="text-xs font-normal text-amber-200/80">/ ~{targetMealCalories} kcal objetivo</span>
           </h2>
         </div>
 

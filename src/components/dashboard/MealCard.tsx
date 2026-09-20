@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DayOfWeek, MealType, Recipe } from '../../types';
 import { useFamilyMenu } from '../../context/FamilyMenuContext';
 import { SwapSaladModal } from './SwapSaladModal';
-import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, Utensils } from 'lucide-react';
+import { Clock, RefreshCw, Flame, ChevronDown, ChevronUp, AlertCircle, Leaf, ExternalLink, Play, Utensils, EyeOff, Plus } from 'lucide-react';
 
 interface MealCardProps {
   day: DayOfWeek;
@@ -23,23 +23,80 @@ const TYPE_COLORS: Record<string, string> = {
   sopa: 'bg-[#eef7f6] text-[#2d6f6a] border-[#cbe8e5]',
   fast_food: 'bg-[#fef2eb] text-[#9a4b29] border-[#fcd5bf]',
   empanada: 'bg-[#fef6e7] text-[#8c591c] border-[#f8e0b9]',
+  salsa: 'bg-[#fef3eb] text-[#a2512a] border-[#fcd5c0]',
 };
 
 export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpenSwap }) => {
   const [showIngredients, setShowIngredients] = useState(false);
   const [isSaladModalOpen, setIsSaladModalOpen] = useState(false);
-  const { members, activeMembersCount, getSaladForMeal } = useFamilyMenu();
+  const { members, activeMembersCount, getSaladForMeal, isSlotOmitted, toggleOmitSlot } = useFamilyMenu();
 
-  // Acompañamiento fresco diario obligatorio (ensalada, tomate aliñado, etc.)
-  const saladSide = getSaladForMeal(day, mealType);
+  const isMealOmitted = isSlotOmitted(day, mealType);
+  const isSaladOmitted = isSlotOmitted(day, 'ensalada');
+
+  // Acompañamiento fresco diario SOLO en almuerzo (null para cenas)
+  const saladSide = mealType === 'almuerzo' ? getSaladForMeal(day, mealType) : null;
 
   // Filtrar familiares activos que están a dieta
   const activeDietMembers = members.filter((m) => m.activeStatus && m.isOnDiet);
 
+  // Si la comida está omitida (ej. menú contundente, comida tardía o ayuno)
+  if (isMealOmitted) {
+    return (
+      <div className="bg-stone-50/90 rounded-3xl p-5 border-2 border-dashed border-stone-200 flex flex-col justify-between transition-all min-h-[200px]">
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full opacity-70 ${
+                mealType === 'almuerzo'
+                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                  : 'bg-orange-100 text-orange-950 border border-orange-200'
+              }`}
+            >
+              {mealType === 'almuerzo' ? '☀️ Almuerzo' : '🌙 Cena'}
+            </span>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-stone-200/80 text-stone-600">
+              Omitido
+            </span>
+          </div>
+
+          <div className="text-center py-5 space-y-1.5">
+            <span className="text-3xl block select-none opacity-40">
+              {mealType === 'almuerzo' ? '🍽️' : '🌙'}
+            </span>
+            <h4 className="font-bold text-stone-700 text-sm sm:text-base">
+              {mealType === 'almuerzo'
+                ? 'Sin almuerzo planificado para hoy'
+                : 'Sin cena planificada para hoy'}
+            </h4>
+            <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed">
+              {mealType === 'almuerzo'
+                ? 'Comida tardía, fuera o menú contundente. Sus ingredientes no se incluirán en la compra ni sus calorías sumarán.'
+                : '¿Comida tardía o menú de mediodía contundente? No se fija cena para hoy ni se suman sus calorías.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-stone-200/60 flex items-center justify-between gap-2">
+          <span className="text-[11px] text-stone-400 truncate">
+            Plato asignado: {recipe.title}
+          </span>
+          <button
+            onClick={() => toggleOmitSlot(day, mealType)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200 transition-all border border-emerald-300 shadow-2xs cursor-pointer active:scale-95 shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Reactivar {mealType}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="bg-white/95 rounded-3xl p-4 sm:p-5 border border-amber-950/10 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
-        {/* Header: Meal type & Swap button */}
+        {/* Header: Meal type & Action buttons */}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
@@ -69,15 +126,26 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
               )}
             </div>
 
-            {/* Hot-Swap Action Button */}
-            <button
-              onClick={() => onOpenSwap(recipe, mealType)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#c26546] bg-[#fbf3ef] hover:bg-[#f6e6de] active:scale-95 transition-all border border-[#f2ded5] shadow-2xs"
-              title="Intercambiar plato por otra alternativa equivalente o buscar en catálogo"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Cambiar</span>
-            </button>
+            {/* Actions: Omitir & Hot-Swap */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => toggleOmitSlot(day, mealType)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-stone-500 hover:text-stone-800 bg-stone-100 hover:bg-stone-200/70 transition-all border border-stone-200/80 shadow-2xs"
+                title={`Omitir ${mealType} de hoy (ej. por comida tardía o copiosa)`}
+              >
+                <EyeOff className="w-3.5 h-3.5 text-stone-400" />
+                <span className="hidden sm:inline">Omitir</span>
+              </button>
+
+              <button
+                onClick={() => onOpenSwap(recipe, mealType)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#c26546] bg-[#fbf3ef] hover:bg-[#f6e6de] active:scale-95 transition-all border border-[#f2ded5] shadow-2xs"
+                title="Intercambiar plato por otra alternativa equivalente o buscar en catálogo"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Cambiar</span>
+              </button>
+            </div>
           </div>
 
           {/* Recipe Title & Emoji */}
@@ -115,62 +183,89 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
             </span>
           </div>
 
-          {/* 🥗 Acompañamiento Fresco Diario Obligatorio con Ingredientes y Paso a Paso */}
-          {saladSide && (
-            <div className="mt-3 p-3 rounded-2xl bg-[#f0f6f0] border border-[#d4e6d4] space-y-2.5">
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <span className="text-2xl select-none shrink-0">{saladSide.emoji}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] uppercase font-extrabold text-[#3a633d] tracking-wider">
-                        Ensalada del menú:
-                      </span>
-                      <Leaf className="w-3 h-3 text-[#3a633d]" />
-                    </div>
-                    <p className="text-xs font-bold text-stone-900 leading-snug">
-                      {saladSide.name}
-                    </p>
-                    <p className="text-[11px] text-[#426b45] line-clamp-1 mt-0.5">
-                      {saladSide.description}
-                    </p>
-                  </div>
+          {/* 🥗 Acompañamiento Fresco: SOLO en el almuerzo (nunca en la cena) */}
+          {mealType === 'almuerzo' && (
+            isSaladOmitted ? (
+              <div className="mt-3 p-2.5 rounded-2xl bg-stone-50/90 border border-dashed border-stone-200 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base select-none opacity-40">🥗</span>
+                  <span className="text-xs text-stone-500 font-medium">
+                    Ensalada de almuerzo omitida hoy
+                  </span>
                 </div>
-
-                {/* Botón interactivo para cambiar o buscar ensaladas */}
                 <button
-                  onClick={() => setIsSaladModalOpen(true)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-[#2e5632] bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-[#c3dcc3] shadow-2xs transition-all active:scale-95 shrink-0"
-                  title="Cambiar o buscar otra ensalada del catálogo para esta comida"
+                  onClick={() => toggleOmitSlot(day, 'ensalada')}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-xl border border-emerald-300 transition-all active:scale-95 cursor-pointer"
                 >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Cambiar</span>
+                  <Plus className="w-3 h-3" />
+                  <span>Añadir ensalada</span>
                 </button>
               </div>
-
-              {/* Ingredientes de la ensalada */}
-              {saladSide.ingredients && saladSide.ingredients.length > 0 && (
-                <div className="pt-2 border-t border-[#d4e6d4]/70">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-[#2e5632] mb-1">
-                    <span>Ingredientes ({activeMembersCount} pers.):</span>
-                    <span className="text-[10px] font-normal text-stone-400">Mercadona / Aldi</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {saladSide.ingredients.map((ing, idx) => {
-                      const scaledQty = (ing.quantity || 1) * activeMembersCount;
-                      return (
-                        <span
-                          key={idx}
-                          className="text-[10px] bg-white/90 border border-[#c3dcc3] text-[#28492c] px-2 py-0.5 rounded-lg font-medium"
-                        >
-                          {ing.name} ({scaledQty} {ing.unit})
+            ) : saladSide ? (
+              <div className="mt-3 p-3 rounded-2xl bg-[#f0f6f0] border border-[#d4e6d4] space-y-2.5">
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <span className="text-2xl select-none shrink-0">{saladSide.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] uppercase font-extrabold text-[#3a633d] tracking-wider">
+                          Ensalada del almuerzo:
                         </span>
-                      );
-                    })}
+                        <Leaf className="w-3 h-3 text-[#3a633d]" />
+                      </div>
+                      <p className="text-xs font-bold text-stone-900 leading-snug">
+                        {saladSide.name}
+                      </p>
+                      <p className="text-[11px] text-[#426b45] line-clamp-1 mt-0.5">
+                        {saladSide.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Acciones de ensalada: omitir y cambiar */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => toggleOmitSlot(day, 'ensalada')}
+                      className="p-1.5 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-white/80 transition-colors"
+                      title="Omitir ensalada en este almuerzo"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setIsSaladModalOpen(true)}
+                      className="flex items-center gap-1 text-[11px] font-bold text-[#2e5632] bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-xl border border-[#c3dcc3] shadow-2xs transition-all active:scale-95"
+                      title="Cambiar o buscar otra ensalada del catálogo para este almuerzo"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Cambiar</span>
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* Ingredientes de la ensalada */}
+                {saladSide.ingredients && saladSide.ingredients.length > 0 && (
+                  <div className="pt-2 border-t border-[#d4e6d4]/70">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[#2e5632] mb-1">
+                      <span>Ingredientes ({activeMembersCount} pers.):</span>
+                      <span className="text-[10px] font-normal text-stone-400">Mercadona / Aldi</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {saladSide.ingredients.map((ing, idx) => {
+                        const scaledQty = (ing.quantity || 1) * activeMembersCount;
+                        return (
+                          <span
+                            key={idx}
+                            className="text-[10px] bg-white/90 border border-[#c3dcc3] text-[#28492c] px-2 py-0.5 rounded-lg font-medium"
+                          >
+                            {ing.name} ({scaledQty} {ing.unit})
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null
           )}
 
           {/* Batch cooking note highlight */}
@@ -276,8 +371,8 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
                 </div>
               </div>
 
-              {/* Sección 2: Ensalada Acompañamiento */}
-              {saladSide && saladSide.ingredients && saladSide.ingredients.length > 0 && (
+              {/* Sección 2: Ensalada Acompañamiento (solo si es almuerzo y no está omitida) */}
+              {mealType === 'almuerzo' && !isSaladOmitted && saladSide && saladSide.ingredients && saladSide.ingredients.length > 0 && (
                 <div className="pt-3 border-t border-stone-100">
                   <div className="flex items-center justify-between text-xs font-bold text-[#2e5632] mb-2">
                     <span className="flex items-center gap-1">
@@ -333,14 +428,16 @@ export const MealCard: React.FC<MealCardProps> = ({ day, mealType, recipe, onOpe
         </div>
       </div>
 
-      {/* Modal de selección y búsqueda de ensaladas */}
-      <SwapSaladModal
-        isOpen={isSaladModalOpen}
-        onClose={() => setIsSaladModalOpen(false)}
-        day={day}
-        mealType={mealType}
-        currentSalad={saladSide}
-      />
+      {/* Modal de selección y búsqueda de ensaladas (solo almuerzo) */}
+      {mealType === 'almuerzo' && saladSide && (
+        <SwapSaladModal
+          isOpen={isSaladModalOpen}
+          onClose={() => setIsSaladModalOpen(false)}
+          day={day}
+          mealType={mealType}
+          currentSalad={saladSide}
+        />
+      )}
     </>
   );
 };

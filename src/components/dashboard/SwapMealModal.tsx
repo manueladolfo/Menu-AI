@@ -40,7 +40,9 @@ type FilterChip =
   | 'carne'
   | 'pasta'
   | 'guiso'
-  | 'huevos';
+  | 'huevos'
+  | 'verdura'
+  | 'salsa';
 
 export const SwapMealModal: React.FC<SwapMealModalProps> = ({
   isOpen,
@@ -493,6 +495,36 @@ export const SwapMealModal: React.FC<SwapMealModalProps> = ({
               }`}
             >
               🥟 Empanadas
+            </button>
+            <button
+              onClick={() => setActiveFilter('guiso')}
+              className={`px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                activeFilter === 'guiso'
+                  ? 'bg-stone-800 text-white'
+                  : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              🥘 Guisos
+            </button>
+            <button
+              onClick={() => setActiveFilter('verdura')}
+              className={`px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                activeFilter === 'verdura'
+                  ? 'bg-stone-800 text-white'
+                  : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              🥦 Verduras
+            </button>
+            <button
+              onClick={() => setActiveFilter('salsa')}
+              className={`px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                activeFilter === 'salsa'
+                  ? 'bg-[#c26546] text-white'
+                  : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              🥫 Salsas & Dips
             </button>
             <button
               onClick={() => setActiveFilter('huevos')}

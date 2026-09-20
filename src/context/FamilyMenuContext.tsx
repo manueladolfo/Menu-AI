@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
-import type { DayOfWeek, FamilyMember, GroceryItem, MealType, Recipe, QuickSnack, FreshSaladSide } from '../types';
+import type { DayOfWeek, FamilyMember, GroceryItem, MealType, Recipe, QuickSnack, FreshSaladSide, OmittableSlot } from '../types';
 import { INITIAL_MEMBERS } from '../data/initialMembers';
 import { INITIAL_RECIPES } from '../data/initialRecipes';
 import { DAILY_FRESH_SIDES, QUICK_SNACKS } from '../data/initialSaladsAndSnacks';
@@ -46,8 +46,12 @@ interface FamilyMenuContextType {
   isSupabaseConfigured: boolean;
   selectedSnackIds: string[];
   toggleSnackInGrocery: (snackId: string) => void;
-  getSaladForMeal: (day: DayOfWeek, mealType: MealType) => FreshSaladSide;
+  getSaladForMeal: (day: DayOfWeek, mealType: MealType) => FreshSaladSide | null;
   getSnackForDay: (day: DayOfWeek) => QuickSnack;
+  omittedSlots: Record<string, boolean>;
+  toggleOmitSlot: (day: DayOfWeek, slot: OmittableSlot) => void;
+  isSlotOmitted: (day: DayOfWeek, slot: OmittableSlot) => boolean;
+  restoreAllSlotsForDay: (day: DayOfWeek) => void;
 }
 
 const FamilyMenuContext = createContext<FamilyMenuContextType | undefined>(undefined);
@@ -61,6 +65,7 @@ const LOCAL_STORAGE_CUSTOM_SALADS = 'familymenu_custom_salads_v1';
 const LOCAL_STORAGE_CUSTOM_SNACKS = 'familymenu_custom_snacks_v1';
 const LOCAL_STORAGE_GROCERY_CHECKS = 'familymenu_grocery_checks_v1';
 const LOCAL_STORAGE_SNACKS = 'familymenu_snacks_v1';
+const LOCAL_STORAGE_OMITTED_SLOTS = 'familymenu_omitted_slots_v1';
 
 export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. Estado de miembros
@@ -195,6 +200,19 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return ['snack-1', 'snack-2'];
   });
 
+  // 11. Slots de comidas, ensaladas o snacks omitidos por día
+  const [omittedSlots, setOmittedSlots] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_OMITTED_SLOTS);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parseando slots omitidos de localStorage', e);
+      }
+    }
+    return {};
+  });
+
   // Persistir en localStorage
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_MEMBERS, JSON.stringify(members));
@@ -231,6 +249,10 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SNACKS, JSON.stringify(selectedSnackIds));
   }, [selectedSnackIds]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_OMITTED_SLOTS, JSON.stringify(omittedSlots));
+  }, [omittedSlots]);
 
   // ==============================================================================
   // SINCRONIZACIÓN EN LA NUBE CON SUPABASE (Bidireccional + Realtime)
@@ -286,6 +308,9 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (data.grocery_checks && typeof data.grocery_checks === 'object') {
             setGroceryChecks(data.grocery_checks);
           }
+          if (data.omitted_slots && typeof data.omitted_slots === 'object') {
+            setOmittedSlots(data.omitted_slots);
+          }
           setSyncStatus('synced');
           setTimeout(() => {
             isIncomingRemoteUpdate.current = false;
@@ -323,6 +348,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             if (newData.custom_salads) setCustomSalads(newData.custom_salads);
             if (newData.custom_snacks) setCustomSnacks(newData.custom_snacks);
             if (newData.grocery_checks) setGroceryChecks(newData.grocery_checks);
+            if (newData.omitted_slots) setOmittedSlots(newData.omitted_slots);
             setSyncStatus('synced');
             setTimeout(() => {
               isIncomingRemoteUpdate.current = false;
@@ -358,6 +384,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           custom_salads: customSalads,
           custom_snacks: customSnacks,
           grocery_checks: groceryChecks,
+          omitted_slots: omittedSlots,
         });
 
         if (error) {
@@ -373,7 +400,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [members, weeklyMeals, weeklySalads, weeklySnacks, customRecipes, customSalads, customSnacks, groceryChecks]);
+  }, [members, weeklyMeals, weeklySalads, weeklySnacks, customRecipes, customSalads, customSnacks, groceryChecks, omittedSlots]);
 
   const activeTargets = useMemo(() => getActiveFamilyTargets(members), [members]);
   const activeMembersCount = Math.max(1, activeTargets.activeCount);
@@ -437,6 +464,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setWeeklyMeals(newMenu);
     setWeeklySalads(newSalads);
     setWeeklySnacks(newSnacks);
+    setOmittedSlots({});
   };
 
   const generateWeekWithAI = async (options: GenerateWithAIOptions) => {
@@ -449,6 +477,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setWeeklyMeals(res.meals);
       setWeeklySalads(generateWeeklySalads());
       setWeeklySnacks(generateWeeklySnacks());
+      setOmittedSlots({});
     }
     return { success: res.success, message: res.message };
   };
@@ -512,12 +541,39 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setWeeklySalads((prev) => ({
       ...prev,
       [`${day}_almuerzo`]: proposal.lunchSalad,
-      [`${day}_cena`]: proposal.dinnerSalad,
     }));
     setWeeklySnacks((prev) => ({
       ...prev,
       [day]: proposal.snack,
     }));
+  };
+
+  const toggleOmitSlot = (day: DayOfWeek, slot: OmittableSlot) => {
+    const key = `${day}_${slot}`;
+    setOmittedSlots((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
+  };
+
+  const isSlotOmitted = (day: DayOfWeek, slot: OmittableSlot): boolean => {
+    return !!omittedSlots[`${day}_${slot}`];
+  };
+
+  const restoreAllSlotsForDay = (day: DayOfWeek) => {
+    setOmittedSlots((prev) => {
+      const next = { ...prev };
+      delete next[`${day}_almuerzo`];
+      delete next[`${day}_cena`];
+      delete next[`${day}_ensalada`];
+      delete next[`${day}_snack`];
+      return next;
+    });
   };
 
   const toggleSnackInGrocery = (snackId: string) => {
@@ -526,7 +582,8 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
-  const getSaladForMeal = (day: DayOfWeek, mealType: MealType): FreshSaladSide => {
+  const getSaladForMeal = (day: DayOfWeek, mealType: MealType): FreshSaladSide | null => {
+    if (mealType === 'cena') return null;
     const key = `${day}_${mealType}`;
     return weeklySalads[key] || getMealSaladSide(day, mealType);
   };
@@ -593,12 +650,16 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     };
 
-    // 1. Ingredientes de comidas de la semana (Almuerzos y Cenas)
+    // 1. Ingredientes de comidas de la semana (Almuerzos y Cenas, excluyendo slots omitidos)
     Object.entries(weeklyMeals).forEach(([slotKey, recipe]) => {
       if (!recipe || !recipe.ingredients) return;
       const parts = slotKey.split('_');
       const day = parts[0] as DayOfWeek;
       const mealType = parts[1] as MealType;
+
+      // Si el slot está omitido por el usuario, saltar
+      if (omittedSlots[`${day}_${mealType}`]) return;
+
       const dayLabel = capitalize(day);
       const mealLabel = mealType === 'almuerzo' ? 'Almuerzo' : 'Cena';
 
@@ -614,30 +675,32 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
     });
 
-    // 2. Ingredientes de las ensaladas frescas seleccionadas para cada comida diaria (14 comidas)
+    // 2. Ingredientes de las ensaladas frescas seleccionadas ÚNICAMENTE para el almuerzo
     DAYS_OF_WEEK.forEach((d) => {
-      (['almuerzo', 'cena'] as MealType[]).forEach((mType) => {
-        const key = `${d}_${mType}`;
-        const salad = weeklySalads[key] || getMealSaladSide(d, mType);
-        if (salad && salad.ingredients) {
-          const dayLabel = capitalize(d);
-          const mealLabel = mType === 'almuerzo' ? 'Almuerzo' : 'Cena';
-          salad.ingredients.forEach((ing) => {
-            addIngredient(
-              ing,
-              `🥗 ${salad.name}`,
-              activeMembersCount,
-              d,
-              mType,
-              `${dayLabel} • Ensalada ${mealLabel}: ${salad.name}`
-            );
-          });
-        }
-      });
+      // Las ensaladas solo se consumen en el almuerzo. Si el almuerzo o la ensalada están omitidos, saltar
+      if (omittedSlots[`${d}_almuerzo`] || omittedSlots[`${d}_ensalada`]) return;
+
+      const key = `${d}_almuerzo`;
+      const salad = weeklySalads[key] || getMealSaladSide(d, 'almuerzo');
+      if (salad && salad.ingredients) {
+        const dayLabel = capitalize(d);
+        salad.ingredients.forEach((ing) => {
+          addIngredient(
+            ing,
+            `🥗 ${salad.name}`,
+            activeMembersCount,
+            d,
+            'almuerzo',
+            `${dayLabel} • Ensalada Almuerzo: ${salad.name}`
+          );
+        });
+      }
     });
 
-    // 3. Ingredientes de los snacks programados diariamente para la semana (7 días)
+    // 3. Ingredientes de los snacks programados diariamente para la semana (7 días, excluyendo omitidos)
     DAYS_OF_WEEK.forEach((d) => {
+      if (omittedSlots[`${d}_snack`]) return;
+
       const snack = weeklySnacks[d];
       if (snack && snack.ingredients) {
         const dayLabel = capitalize(d);
@@ -672,7 +735,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     return Array.from(itemMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [weeklyMeals, weeklySalads, weeklySnacks, activeMembersCount, groceryChecks, selectedSnackIds, allSnacks]);
+  }, [weeklyMeals, weeklySalads, weeklySnacks, activeMembersCount, groceryChecks, selectedSnackIds, allSnacks, omittedSlots]);
 
   const toggleGroceryItem = (id: string) => {
     setGroceryChecks((prev) => ({
@@ -726,6 +789,10 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         toggleSnackInGrocery,
         getSaladForMeal,
         getSnackForDay,
+        omittedSlots,
+        toggleOmitSlot,
+        isSlotOmitted,
+        restoreAllSlotsForDay,
       }}
     >
       {children}

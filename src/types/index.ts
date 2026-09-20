@@ -32,7 +32,10 @@ export type RecipeType =
   | 'huevos'
   | 'sopa'
   | 'fast_food'
-  | 'empanada';
+  | 'empanada'
+  | 'salsa';
+
+export type OmittableSlot = 'almuerzo' | 'cena' | 'ensalada' | 'snack';
 
 export interface FreshSaladSide {
   id: string;

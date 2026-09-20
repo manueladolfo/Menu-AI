@@ -71,7 +71,7 @@ export const SwapSaladModal: React.FC<SwapSaladModalProps> = ({
     return allSalads.filter((salad) => {
       // 1. Filtros rápidos
       if (selectedFilter === 'sugeridas') {
-        if (salad.id !== defaultSuggestedSalad.id) return false;
+        if (!defaultSuggestedSalad || salad.id !== defaultSuggestedSalad.id) return false;
       } else if (selectedFilter === 'ia') {
         const isAi = customSaladIds.has(salad.id) || salad.id.startsWith('ai-');
         if (!isAi) return false;
@@ -130,8 +130,8 @@ export const SwapSaladModal: React.FC<SwapSaladModalProps> = ({
     }).sort((a, b) => {
       // Priorizar ensalada sugerida de hoy al ver "todas"
       if (selectedFilter === 'todas' && !searchQuery.trim()) {
-        const aSug = a.id === defaultSuggestedSalad.id ? 1 : 0;
-        const bSug = b.id === defaultSuggestedSalad.id ? 1 : 0;
+        const aSug = defaultSuggestedSalad && a.id === defaultSuggestedSalad.id ? 1 : 0;
+        const bSug = defaultSuggestedSalad && b.id === defaultSuggestedSalad.id ? 1 : 0;
         if (aSug !== bSug) return bSug - aSug;
 
         const aAi = (customSaladIds.has(a.id) || a.id.startsWith('ai-')) ? 1 : 0;
@@ -514,7 +514,7 @@ export const SwapSaladModal: React.FC<SwapSaladModalProps> = ({
             </div>
           ) : (
             filteredSalads.map((salad) => {
-              const isSuggested = salad.id === defaultSuggestedSalad.id;
+              const isSuggested = defaultSuggestedSalad ? salad.id === defaultSuggestedSalad.id : false;
               const isAiCustom = customSaladIds.has(salad.id) || salad.id.startsWith('ai-');
 
               return (

@@ -14,19 +14,16 @@ export const DAYS_OF_WEEK: DayOfWeek[] = [
 export const MEAL_TYPES: MealType[] = ['almuerzo', 'cena'];
 
 /**
- * Devuelve un mapa inicial de ensaladas frescas variadas y equilibradas para las 14 comidas de la semana.
+ * Devuelve un mapa inicial de ensaladas frescas variadas y equilibradas para los 7 almuerzos de la semana.
+ * Las ensaladas se consumen exclusivamente en el almuerzo.
  */
 export function generateWeeklySalads(): Record<string, FreshSaladSide> {
   const result: Record<string, FreshSaladSide> = {};
   const totalSalads = DAILY_FRESH_SIDES.length;
 
-  let counter = 0;
-  DAYS_OF_WEEK.forEach((day) => {
-    (['almuerzo', 'cena'] as MealType[]).forEach((mealType) => {
-      // Rotar secuencialmente por el catálogo de 20+ ensaladas para garantizar máxima variedad
-      result[`${day}_${mealType}`] = DAILY_FRESH_SIDES[counter % totalSalads];
-      counter++;
-    });
+  DAYS_OF_WEEK.forEach((day, index) => {
+    // Solo almuerzos: 1 ensalada diaria al mediodía
+    result[`${day}_almuerzo`] = DAILY_FRESH_SIDES[index % totalSalads];
   });
 
   return result;
@@ -47,13 +44,12 @@ export function generateWeeklySnacks(): Record<DayOfWeek, QuickSnack> {
 }
 
 /**
- * Devuelve el acompañamiento fresco o ensalada correspondiente a cada comida del día.
+ * Devuelve el acompañamiento fresco o ensalada correspondiente al almuerzo del día (null para cenas).
  */
-export function getMealSaladSide(day: DayOfWeek, mealType: MealType): FreshSaladSide {
+export function getMealSaladSide(day: DayOfWeek, mealType: MealType): FreshSaladSide | null {
+  if (mealType === 'cena') return null;
   const dayIndex = DAYS_OF_WEEK.indexOf(day);
-  const offset = mealType === 'cena' ? 1 : 0;
-  const index = (dayIndex * 2 + offset) % DAILY_FRESH_SIDES.length;
-  return DAILY_FRESH_SIDES[index];
+  return DAILY_FRESH_SIDES[dayIndex % DAILY_FRESH_SIDES.length];
 }
 
 /**
@@ -158,6 +154,8 @@ export function getSwapAlternatives(
       (r: Recipe) =>
         r.type === 'fast_food' || r.type === 'empanada' || r.type === 'pasta' || r.type === 'carne'
     );
+  } else if (currentRecipe.type === 'salsa') {
+    primaryPool = candidates.filter((r: Recipe) => r.type === 'salsa');
   } else if (mealType === 'cena') {
     primaryPool = candidates.filter((r: Recipe) =>
       ['sopa', 'pescado', 'huevos', 'verdura', 'ensalada'].includes(r.type)
@@ -172,6 +170,10 @@ export function getSwapAlternatives(
     } else if (currentRecipe.type === 'sopa') {
       primaryPool = candidates.filter(
         (r: Recipe) => r.type === 'sopa' || r.type === 'verdura' || r.type === 'guiso'
+      );
+    } else if (currentRecipe.type === 'verdura') {
+      primaryPool = candidates.filter(
+        (r: Recipe) => r.type === 'verdura' || r.type === 'sopa' || r.type === 'huevos'
       );
     } else {
       primaryPool = candidates.filter((r: Recipe) => r.type === currentRecipe.type);
