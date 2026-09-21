@@ -265,6 +265,139 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const isInitialLoad = useRef(true);
   const isIncomingRemoteUpdate = useRef(false);
 
+  // Mantenemos siempre la referencia actualizada al último estado para guardado seguro
+  const currentStateRef = useRef({
+    members,
+    weeklyMeals,
+    weeklySalads,
+    weeklySnacks,
+    customRecipes,
+    customSalads,
+    customSnacks,
+    groceryChecks,
+    omittedSlots,
+  });
+
+  useEffect(() => {
+    currentStateRef.current = {
+      members,
+      weeklyMeals,
+      weeklySalads,
+      weeklySnacks,
+      customRecipes,
+      customSalads,
+      customSnacks,
+      groceryChecks,
+      omittedSlots,
+    };
+  }, [members, weeklyMeals, weeklySalads, weeklySnacks, customRecipes, customSalads, customSnacks, groceryChecks, omittedSlots]);
+
+  // Función reutilizable para procesar datos que vienen de Supabase (carga inicial o Realtime)
+  const applyRemoteState = (data: any) => {
+    if (!data) return;
+    isIncomingRemoteUpdate.current = true;
+
+    if (data.members && Array.isArray(data.members) && data.members.length > 0) {
+      setMembers(data.members);
+    }
+    if (data.weekly_meals && typeof data.weekly_meals === 'object' && Object.keys(data.weekly_meals).length > 0) {
+      setWeeklyMeals(data.weekly_meals);
+    }
+    if (data.weekly_salads && typeof data.weekly_salads === 'object' && Object.keys(data.weekly_salads).length > 0) {
+      setWeeklySalads(data.weekly_salads);
+    }
+    if (data.weekly_snacks && typeof data.weekly_snacks === 'object' && Object.keys(data.weekly_snacks).length > 0) {
+      setWeeklySnacks(data.weekly_snacks);
+    }
+    if (data.custom_recipes && Array.isArray(data.custom_recipes)) {
+      setCustomRecipes(data.custom_recipes);
+    }
+    if (data.custom_salads && Array.isArray(data.custom_salads)) {
+      setCustomSalads(data.custom_salads);
+    }
+    if (data.custom_snacks && Array.isArray(data.custom_snacks)) {
+      setCustomSnacks(data.custom_snacks);
+    }
+
+    // Extraer checks de la compra y recuperar omitted_slots si venía empaquetado en fallback
+    let remoteOmittedSlots = data.omitted_slots;
+    if (data.grocery_checks && typeof data.grocery_checks === 'object') {
+      const { __meta_omitted_slots, ...cleanChecks } = data.grocery_checks;
+      setGroceryChecks(cleanChecks);
+      if (!remoteOmittedSlots && __meta_omitted_slots) {
+        try {
+          remoteOmittedSlots = typeof __meta_omitted_slots === 'string'
+            ? JSON.parse(__meta_omitted_slots)
+            : __meta_omitted_slots;
+        } catch (e) {
+          console.warn('Error parseando __meta_omitted_slots:', e);
+        }
+      }
+    }
+
+    if (remoteOmittedSlots && typeof remoteOmittedSlots === 'object') {
+      setOmittedSlots(remoteOmittedSlots);
+    }
+
+    setSyncStatus('synced');
+    setTimeout(() => {
+      isIncomingRemoteUpdate.current = false;
+      isInitialLoad.current = false;
+    }, 250);
+  };
+
+  // Función de guardado en Supabase robusta con fallback automático
+  const saveToSupabase = async () => {
+    if (isInitialLoad.current || isIncomingRemoteUpdate.current) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    const state = currentStateRef.current;
+    setSyncStatus('syncing');
+
+    const payload: any = {
+      id: 'family_default',
+      updated_at: new Date().toISOString(),
+      members: state.members,
+      weekly_meals: state.weeklyMeals,
+      weekly_salads: state.weeklySalads,
+      weekly_snacks: state.weeklySnacks,
+      custom_recipes: state.customRecipes,
+      custom_salads: state.customSalads,
+      custom_snacks: state.customSnacks,
+      grocery_checks: state.groceryChecks,
+      omitted_slots: state.omittedSlots,
+    };
+
+    try {
+      let { error } = await supabase.from('family_sync').upsert(payload);
+
+      // Si falla porque la columna omitted_slots no existe en Supabase (error PGRST204),
+      // reintentamos automáticamente sin la columna y empaquetamos omitted_slots en grocery_checks
+      if (error && (error.code === 'PGRST204' || error.message?.includes('omitted_slots'))) {
+        console.warn('Columna omitted_slots no detectada en Supabase, aplicando guardado compatible...');
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.omitted_slots;
+        fallbackPayload.grocery_checks = {
+          ...state.groceryChecks,
+          __meta_omitted_slots: state.omittedSlots,
+        };
+        const retry = await supabase.from('family_sync').upsert(fallbackPayload);
+        error = retry.error;
+      }
+
+      if (error) {
+        console.warn('Error guardando en Supabase:', error);
+        setSyncStatus('offline');
+      } else {
+        setSyncStatus('synced');
+      }
+    } catch (err) {
+      console.warn('Fallo de red en sync con Supabase:', err);
+      setSyncStatus('offline');
+    }
+  };
+
   // 1. Descarga inicial y suscripción a cambios en tiempo real desde Supabase
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -285,39 +418,7 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           .single();
 
         if (data && !error) {
-          isIncomingRemoteUpdate.current = true;
-          if (data.members && Array.isArray(data.members) && data.members.length > 0) {
-            setMembers(data.members);
-          }
-          if (data.weekly_meals && Object.keys(data.weekly_meals).length > 0) {
-            setWeeklyMeals(data.weekly_meals);
-          }
-          if (data.weekly_salads && Object.keys(data.weekly_salads).length > 0) {
-            setWeeklySalads(data.weekly_salads);
-          }
-          if (data.weekly_snacks && Object.keys(data.weekly_snacks).length > 0) {
-            setWeeklySnacks(data.weekly_snacks);
-          }
-          if (data.custom_recipes && Array.isArray(data.custom_recipes)) {
-            setCustomRecipes(data.custom_recipes);
-          }
-          if (data.custom_salads && Array.isArray(data.custom_salads)) {
-            setCustomSalads(data.custom_salads);
-          }
-          if (data.custom_snacks && Array.isArray(data.custom_snacks)) {
-            setCustomSnacks(data.custom_snacks);
-          }
-          if (data.grocery_checks && typeof data.grocery_checks === 'object') {
-            setGroceryChecks(data.grocery_checks);
-          }
-          if (data.omitted_slots && typeof data.omitted_slots === 'object') {
-            setOmittedSlots(data.omitted_slots);
-          }
-          setSyncStatus('synced');
-          setTimeout(() => {
-            isIncomingRemoteUpdate.current = false;
-            isInitialLoad.current = false;
-          }, 400);
+          applyRemoteState(data);
         } else {
           // Si es la primera vez que se usa y no existe la fila, se creará en el siguiente guardado
           setSyncStatus('synced');
@@ -339,29 +440,31 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'family_sync', filter: 'id=eq.family_default' },
         (payload: any) => {
-          const newData = payload.new;
-          if (newData) {
-            isIncomingRemoteUpdate.current = true;
-            if (newData.members && Array.isArray(newData.members)) setMembers(newData.members);
-            if (newData.weekly_meals) setWeeklyMeals(newData.weekly_meals);
-            if (newData.weekly_salads) setWeeklySalads(newData.weekly_salads);
-            if (newData.weekly_snacks) setWeeklySnacks(newData.weekly_snacks);
-            if (newData.custom_recipes) setCustomRecipes(newData.custom_recipes);
-            if (newData.custom_salads) setCustomSalads(newData.custom_salads);
-            if (newData.custom_snacks) setCustomSnacks(newData.custom_snacks);
-            if (newData.grocery_checks) setGroceryChecks(newData.grocery_checks);
-            if (newData.omitted_slots) setOmittedSlots(newData.omitted_slots);
-            setSyncStatus('synced');
-            setTimeout(() => {
-              isIncomingRemoteUpdate.current = false;
-            }, 400);
+          if (payload.new) {
+            applyRemoteState(payload.new);
           }
         }
       )
       .subscribe();
 
+    // Guardar inmediatamente si el usuario minimiza la pestaña o cierra la ventana
+    const handleFlushSync = () => {
+      saveToSupabase();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleFlushSync();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleFlushSync);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('beforeunload', handleFlushSync);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -373,33 +476,9 @@ export const FamilyMenuProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!supabase) return;
 
     setSyncStatus('syncing');
-    const timer = setTimeout(async () => {
-      try {
-        const { error } = await supabase.from('family_sync').upsert({
-          id: 'family_default',
-          updated_at: new Date().toISOString(),
-          members,
-          weekly_meals: weeklyMeals,
-          weekly_salads: weeklySalads,
-          weekly_snacks: weeklySnacks,
-          custom_recipes: customRecipes,
-          custom_salads: customSalads,
-          custom_snacks: customSnacks,
-          grocery_checks: groceryChecks,
-          omitted_slots: omittedSlots,
-        });
-
-        if (error) {
-          console.warn('Error guardando en Supabase:', error);
-          setSyncStatus('offline');
-        } else {
-          setSyncStatus('synced');
-        }
-      } catch (err) {
-        console.warn('Fallo de red en sync con Supabase:', err);
-        setSyncStatus('offline');
-      }
-    }, 600);
+    const timer = setTimeout(() => {
+      saveToSupabase();
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [members, weeklyMeals, weeklySalads, weeklySnacks, customRecipes, customSalads, customSnacks, groceryChecks, omittedSlots]);

@@ -127,8 +127,12 @@ CREATE TABLE IF NOT EXISTS public.family_sync (
     custom_recipes JSONB DEFAULT '[]'::jsonb,
     custom_salads JSONB DEFAULT '[]'::jsonb,
     custom_snacks JSONB DEFAULT '[]'::jsonb,
-    grocery_checks JSONB DEFAULT '{}'::jsonb
+    grocery_checks JSONB DEFAULT '{}'::jsonb,
+    omitted_slots JSONB DEFAULT '{}'::jsonb
 );
+
+-- Migración segura por si la tabla ya existía sin la columna omitted_slots:
+ALTER TABLE public.family_sync ADD COLUMN IF NOT EXISTS omitted_slots JSONB DEFAULT '{}'::jsonb;
 
 ALTER TABLE public.family_sync ENABLE ROW LEVEL SECURITY;
 
